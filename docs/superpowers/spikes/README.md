@@ -10,7 +10,7 @@ Each spike produces a binding decision for Plan 1 (Foundation).
 | 1 | Amp MCP overlap                          | not started | —           |
 | 2 | Amp structured-output reliability        | not started | —           |
 | 3 | Bundled ONNX viability                   | not started | —           |
-| 4 | Anthropic OAuth public availability      | not started | —           |
+| 4 | Anthropic OAuth public availability      | complete    | no-go       |
 | 5 | Space-agent fork strategy                | not started | —           |
 
 ## Reading order
