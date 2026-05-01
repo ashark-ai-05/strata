@@ -7,19 +7,21 @@ Each spike produces a binding decision for Plan 1 (Foundation).
 
 | # | Spike                                    | Status      | Decision    |
 |---|------------------------------------------|-------------|-------------|
-| 1 | Amp MCP overlap                          | deferred    | —           |
-| 2 | Amp structured-output reliability        | deferred    | —           |
+| 1 | Amp MCP overlap                          | harness ready | pending data |
+| 2 | Amp structured-output reliability        | harness ready | pending data |
 | 3 | Bundled ONNX viability                   | complete    | go          |
 | 4 | Anthropic OAuth public availability      | complete    | no-go       |
 | 5 | Space-agent fork strategy                | complete    | hybrid      |
 
-**Deferred spikes (1, 2)** require an `AMP_API_KEY` and will run before
-Plan 5 (agent loop) implementation begins. Plans 1–4 are unblocked.
+**Spikes 1 and 2** have working harnesses checked in; running them
+requires an `AMP_API_KEY`. Set the key, follow the per-spike README,
+and update the findings docs with the measured numbers. Plans 1–4
+do not depend on these outcomes.
 
 ## Spike findings
 
-- [01 — Amp MCP overlap](./01-amp-mcp-overlap.md) *(deferred)*
-- [02 — Amp structured-output](./02-amp-structured-output.md) *(deferred)*
+- [01 — Amp MCP overlap](./01-amp-mcp-overlap.md) *(harness ready)*
+- [02 — Amp structured-output](./02-amp-structured-output.md) *(harness ready)*
 - [03 — Bundled ONNX viability](./03-onnx-bundled.md)
 - [04 — Anthropic OAuth availability](./04-anthropic-oauth.md)
 - [05 — Space-agent fork strategy](./05-space-agent-fork.md)
