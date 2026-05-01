@@ -7,22 +7,59 @@ Each spike produces a binding decision for Plan 1 (Foundation).
 
 | # | Spike                                    | Status      | Decision    |
 |---|------------------------------------------|-------------|-------------|
-| 1 | Amp MCP overlap                          | not started | —           |
-| 2 | Amp structured-output reliability        | not started | —           |
+| 1 | Amp MCP overlap                          | deferred    | —           |
+| 2 | Amp structured-output reliability        | deferred    | —           |
 | 3 | Bundled ONNX viability                   | complete    | go          |
 | 4 | Anthropic OAuth public availability      | complete    | no-go       |
 | 5 | Space-agent fork strategy                | complete    | hybrid      |
 
-## Reading order
-
-Recommended: 4 → 3 → 5 → 2 → 1. Spike 4 is shortest and frees the
-config schema; spike 3 unblocks the embedder default; spike 5 frames
-the foundation work; spikes 2 and 1 inform the agent-mode design.
+**Deferred spikes (1, 2)** require an `AMP_API_KEY` and will run before
+Plan 5 (agent loop) implementation begins. Plans 1–4 are unblocked.
 
 ## Spike findings
 
-- [01 — Amp MCP overlap](./01-amp-mcp-overlap.md)
-- [02 — Amp structured-output](./02-amp-structured-output.md)
+- [01 — Amp MCP overlap](./01-amp-mcp-overlap.md) *(deferred)*
+- [02 — Amp structured-output](./02-amp-structured-output.md) *(deferred)*
 - [03 — Bundled ONNX viability](./03-onnx-bundled.md)
 - [04 — Anthropic OAuth availability](./04-anthropic-oauth.md)
 - [05 — Space-agent fork strategy](./05-space-agent-fork.md)
+
+## Plan 1 implications (from completed spikes)
+
+Synthesizing spikes 03, 04, and 05:
+
+- **Embedder default:** `onnx-bundled` (`bge-small-en-v1.5`, 127 MB,
+  384-dim, 272 chunks/sec, 4.5s cold-start). Pre-warm on app launch to
+  mask cold-start. Sized for the binary; offline load works.
+- **Anthropic auth:** API key only in v1. The provider config schema
+  for Anthropic supports `auth.type = 'apiKey'` exclusively. **Drop
+  OAuth entirely from v1 plans** — Anthropic's Feb 2026 ToS now
+  explicitly bans third-party use of subscriber OAuth tokens. Revisit
+  only if Anthropic opens a public client-registration program; do not
+  build for it speculatively.
+- **Space-agent integration:** **hybrid** — pin a known-good upstream
+  commit and maintain a small patch set. Of 10 required v1 changes:
+  3 are pure extensions, 5 are extension+wiring (no core edits, but
+  need module/endpoint registration), and 2 require core edits in
+  `server/jobs/job_runner.js` (zero churn upstream, low merge friction).
+  Plan 1 should start with `git clone` of space-agent at a pinned SHA,
+  then a thin patch-tracking layer rather than a hard fork.
+- **Agent-mode (Mode B / Amp):** decision still pending spikes 01 and 02.
+  Plan 5 will not start until those land. The `LLMProvider.kind = 'agent'`
+  abstraction stays in the design as planned — only the *contents* of the
+  AgentExecutor implementation are deferred.
+
+## Spec amendment
+
+`docs/superpowers/specs/2026-05-02-llm-wiki-design.md` says:
+
+> Anthropic (API key today; OAuth when publicly available)
+
+Per spike 04, replace with:
+
+> Anthropic (API key only). OAuth is not available to third-party apps;
+> Anthropic's Feb 2026 ToS update bans third-party use of subscriber
+> OAuth tokens. No v1.x roadmap for this unless Anthropic opens a public
+> client-registration program.
+
+This amendment is captured in `2026-05-02-llm-wiki-design-amendments.md`.
