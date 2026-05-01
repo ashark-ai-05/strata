@@ -33,12 +33,15 @@ Synthesizing spikes 03, 04, and 05:
 - **Embedder default:** `onnx-bundled` (`bge-small-en-v1.5`, 127 MB,
   384-dim, 272 chunks/sec, 4.5s cold-start). Pre-warm on app launch to
   mask cold-start. Sized for the binary; offline load works.
-- **Anthropic auth:** API key only in v1. The provider config schema
-  for Anthropic supports `auth.type = 'apiKey'` exclusively. **Drop
-  OAuth entirely from v1 plans** — Anthropic's Feb 2026 ToS now
-  explicitly bans third-party use of subscriber OAuth tokens. Revisit
-  only if Anthropic opens a public client-registration program; do not
-  build for it speculatively.
+- **Anthropic auth (two paths):**
+  - **Direct API:** API key only. The Feb 2026 ToS bans third-party
+    use of subscriber OAuth tokens against the public Anthropic API.
+  - **Claude Agent SDK:** `kind: 'agent'` provider via
+    `@anthropic-ai/claude-agent-sdk`. The SDK supports OAuth (Claude.ai
+    subscriber auth) **or** API key, handled internally. v1 ships
+    `ClaudeAgentSdkAdapter` alongside `AmpAdapter` as the second
+    agent-mode provider. This is the recommended home profile when
+    the user has a Claude Pro/Max subscription.
 - **Space-agent integration:** **hybrid** — pin a known-good upstream
   commit and maintain a small patch set. Of 10 required v1 changes:
   3 are pure extensions, 5 are extension+wiring (no core edits, but
@@ -51,17 +54,16 @@ Synthesizing spikes 03, 04, and 05:
   abstraction stays in the design as planned — only the *contents* of the
   AgentExecutor implementation are deferred.
 
-## Spec amendment
+## Spec amendments
 
-`docs/superpowers/specs/2026-05-02-llm-wiki-design.md` says:
+All spec amendments live in
+[`2026-05-02-llm-wiki-design-amendments.md`](../specs/2026-05-02-llm-wiki-design-amendments.md):
 
-> Anthropic (API key today; OAuth when publicly available)
-
-Per spike 04, replace with:
-
-> Anthropic (API key only). OAuth is not available to third-party apps;
-> Anthropic's Feb 2026 ToS update bans third-party use of subscriber
-> OAuth tokens. No v1.x roadmap for this unless Anthropic opens a public
-> client-registration program.
-
-This amendment is captured in `2026-05-02-llm-wiki-design-amendments.md`.
+1. **Amendment 1** — Direct-API OAuth removed; OAuth re-enters via
+   Claude Agent SDK as a `kind: 'agent'` provider.
+2. **Amendment 2** — Space-agent integration is **hybrid** (pinned
+   upstream + small patch set), not a hard fork.
+3. **Amendment 3** — ONNX cold-start mitigation (pre-warm on launch)
+   is **mandatory**, not optional.
+4. **Pending** — Amendments 4 and 5 will land when spikes 01 and 02
+   execute against a real `AMP_API_KEY`.
