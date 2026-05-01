@@ -4,3 +4,4 @@ models/
 .env
 .env.local
 *.log
+05-space-agent-fork/space-agent/
