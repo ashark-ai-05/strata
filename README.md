@@ -240,3 +240,55 @@ Boots the server, makes one HTTP request, and exits 0 on success. Used by CI.
 ### Updating the pinned commit
 
 Edit `PINNED_SHA` in `scripts/setup-space-agent.sh`, run `pnpm setup`, then `pnpm dev:check` to verify boot still works. Per Spike 05, upstream churn is concentrated in areas we don't extend (Electron host, login UI, agent chat), so pin updates should be low-friction. Commit the pin update with the SHA in the message.
+
+---
+
+## MCP Sources
+
+Configure MCP servers in `~/.llm-wiki/config.json` under `profiles[].sources`. Three transports are supported: `stdio` (subprocess), `sse` (Server-Sent Events), and `http` (Streamable HTTP).
+
+### Example: filesystem MCP
+
+```jsonc
+{
+  "activeProfile": "claude-sdk",
+  "profiles": [
+    {
+      "name": "claude-sdk",
+      "llm": { "provider": "claude-agent-sdk" },
+      "embed": { "provider": "onnx-bundled", "model": "BAAI/bge-small-en-v1.5" },
+      "sources": [
+        {
+          "id": "workspace-fs",
+          "name": "Workspace Files",
+          "transport": "stdio",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/code"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### CLI commands
+
+```bash
+# List configured sources for the active profile
+pnpm cli --list-sources
+
+# Connect every source and print health + tool count
+pnpm cli --probe-sources
+
+# Print the tool catalog for one source
+pnpm cli --list-tools workspace-fs
+
+# Call a tool directly
+pnpm cli --call-tool workspace-fs read_file '{"path": "/Users/me/code/README.md"}'
+```
+
+### Roadmap
+
+- v2 (this plan): connect/list/call. Raw tool surface.
+- v3 (Plan 3): typed `Capability` verbs (`search` / `fetch` / `list` / `subscribe`) mapped onto MCP tools, with optional `source-manifest.json` hints.
+- v3+ (Plan 5): MCP results materialised as typed `Result<K>` and routed through the agent loop.
