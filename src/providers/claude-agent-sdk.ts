@@ -51,17 +51,31 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
       this.config.systemPrompt ??
       DEFAULT_SYSTEM_PROMPT;
 
+    // Clean working directory — process.cwd() includes a git repo + lots of
+    // files which the SDK can use to produce dynamic context blocks. A
+    // freshly-created tempdir gives the SDK nothing to introspect.
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const cleanCwd = mkdtempSync(join(tmpdir(), 'llm-wiki-sdk-'));
+
     const options: Record<string, unknown> = {
       systemPrompt,
-      // Don't load .claude/settings.json from the filesystem — we run the
-      // SDK programmatically with our own config; user/project/local
-      // settings would inject extra system prompt fragments we don't want.
+      // Don't load .claude/settings.json from the filesystem.
       settingSources: [],
-      // Disable all built-in tools (Bash, Read, Edit, Grep, etc.). For pure
-      // chat we don't need them, and their definitions can include empty
-      // cache_control text blocks the Anthropic API rejects. Plan 5+ wires
-      // tool calling for the agent loop; this stays empty until then.
+      // Disable all built-in tools (Bash, Read, Edit, Grep, etc.).
       tools: [],
+      // Run the SDK from an empty tempdir so it has no project files,
+      // no git status, no CLAUDE.md, no AGENTS.md to inject as context.
+      cwd: cleanCwd,
+      // No file-checkpointing context blocks.
+      enableFileCheckpointing: false,
+      // No session forking artifacts.
+      forkSession: false,
+      // No custom agents.
+      agents: {},
+      // Defensive: also disallow all tools by name pattern.
+      disallowedTools: ['*'],
     };
     if (this.config.model) options.model = this.config.model;
 
