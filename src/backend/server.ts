@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import { BackendState } from './state.js';
 import { healthRoute } from './routes/health.js';
 
@@ -28,6 +29,41 @@ app.get('/v1/health', async (c) => {
     profile: state.profileName,
     llm: state.getLLMProvider().id,
     embedder: state.getEmbedder().id,
+  });
+});
+
+// Query — streams text deltas via SSE
+app.post('/v1/query', async (c) => {
+  const state = await getState();
+  const body = (await c.req.json().catch(() => ({}))) as {
+    prompt?: string;
+    systemPrompt?: string;
+  };
+  if (!body.prompt) {
+    return c.json({ error: 'prompt is required' }, 400);
+  }
+
+  return streamSSE(c, async (stream) => {
+    const provider = state.getLLMProvider();
+    try {
+      for await (const event of provider.query({
+        prompt: body.prompt!,
+        systemPrompt: body.systemPrompt,
+      })) {
+        await stream.writeSSE({
+          event: event.type,
+          data: JSON.stringify(event),
+        });
+      }
+    } catch (e) {
+      await stream.writeSSE({
+        event: 'error',
+        data: JSON.stringify({
+          type: 'error',
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      });
+    }
   });
 });
 

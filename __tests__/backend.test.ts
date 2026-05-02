@@ -38,3 +38,27 @@ describe('GET /v1/health', () => {
     expect(typeof json.profile).toBe('string');
   });
 });
+
+describe('POST /v1/query', () => {
+  it('returns 400 when prompt is missing', async () => {
+    const res = await app.request('/v1/query', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 200 with text/event-stream content-type when prompt is provided', async () => {
+    // The actual provider may attempt a real call; for this unit test we
+    // only verify the wire-up: status code and content-type. The provider
+    // call is exercised in CLI / integration tests elsewhere.
+    const res = await app.request('/v1/query', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'hello' }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
+  });
+});
