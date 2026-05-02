@@ -28,7 +28,7 @@
 // requestBody must remain a plain object; space-agent's buildFetchRequestInit
 // will JSON.stringify it before sending.
 
-import { health, getBackendUrl } from '../../../../../request.js';
+import { health, getBackendUrl } from '/mod/krunal/llm-wiki/ext/request.js';
 
 export default async function llmWikiOnscreenRequestHook(hookContext) {
   const apiRequest = hookContext?.result;

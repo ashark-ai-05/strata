@@ -1,18 +1,17 @@
-// Fires after any successful login navigation. Pre-warms the embedder via
+// Fires after framework page initialization. Pre-warms the embedder via
 // the llm-wiki backend so the first user query doesn't pay the ONNX cold-
 // start (~4.5s on M-series CPU). Best effort; failures are logged but
-// do not block login.
+// do not block init.
 //
 // Per design spec amendment 3: pre-warm on app launch is mandatory.
 //
-// Upstream hook contract (from vendor/space-agent login_hooks/login-hooks.js):
-//   The `any_login` extension point is called with a context object:
-//   { identity, isFirstLogin, isLoginNavigation, markerPath, username }
-//   The hook is called only when arrivedFromLogin === true (isLoginNavigation).
+// Hook seam: _core/framework/initializer.js/initialize/end (per the
+// extensions skill — framework-backed pages expose this seam after
+// once-per-page shell setup).
 
-import { health, embed } from '../../../../request.js';
+import { health, embed } from '/mod/krunal/llm-wiki/ext/request.js';
 
-export default async function llmWikiInit(context = {}) {
+export default async function llmWikiInit() {
   // health() fast-exits if backend isn't running; embed warmup is fire-and-forget.
   try {
     const h = await health();
