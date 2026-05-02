@@ -2,6 +2,7 @@ import { loadConfig } from '../config/loader.js';
 import { createProvider } from '../providers/index.js';
 import { createEmbedder } from '../embedders/index.js';
 import { SourceRegistry } from '../mcp/registry.js';
+import { openDefaultStore, type Store } from '../storage/store.js';
 import type { Profile } from '../config/schema.js';
 import type { LLMProvider } from '../core/provider.js';
 import type { EmbeddingProvider } from '../core/embedding-provider.js';
@@ -23,6 +24,7 @@ export class BackendState {
   private embedder: EmbeddingProvider | null = null;
   private sourceRegistry = new SourceRegistry();
   private sourcesConnectedPromise: Promise<void> | null = null;
+  private storePromise: Promise<Store> | null = null;
 
   private constructor(profile: Profile) {
     this.profile = profile;
@@ -50,6 +52,13 @@ export class BackendState {
 
   getSourceRegistry(): SourceRegistry {
     return this.sourceRegistry;
+  }
+
+  async getStore(): Promise<Store> {
+    if (!this.storePromise) {
+      this.storePromise = openDefaultStore();
+    }
+    return this.storePromise;
   }
 
   /**

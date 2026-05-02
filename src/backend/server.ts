@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { BackendState } from './state.js';
 import { healthRoute } from './routes/health.js';
 import { queryOpenAIRoute } from './routes/query-openai.js';
+import { searchRoute } from './routes/search.js';
 
 /**
  * The Hono app. Tests can hit `app.request(path)` directly without
@@ -173,6 +174,17 @@ app.post('/v1/query', async (c) => {
   lazyApp.post('/v1/query/openai', async (c) => {
     const state = await getState();
     const sub = queryOpenAIRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  app.route('/', lazyApp);
+}
+
+// Search — POST /v1/search, wraps SearchService with Result envelope
+{
+  const lazyApp = new Hono();
+  lazyApp.post('/v1/search', async (c) => {
+    const state = await getState();
+    const sub = searchRoute(state);
     return sub.fetch(c.req.raw);
   });
   app.route('/', lazyApp);
