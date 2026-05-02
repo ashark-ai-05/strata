@@ -345,3 +345,32 @@ pnpm dev:full
 ```
 
 Starts the backend AND space-agent concurrently. Open http://127.0.0.1:3456 to log in. The login hook (`customware/.../any_login/llm-wiki-init.js`) calls the backend `/v1/health`, then fires a fire-and-forget `/v1/embed` call to pre-warm the ONNX model — by the time you start chatting, the embedder is hot.
+
+---
+
+## Indexing and search
+
+`pnpm cli --index <path>` walks a directory recursively, chunks every `.md` / `.markdown` / `.txt` file (paragraph-aware, ~500 char target with 50 char overlap), embeds each chunk via the active profile's embedder, and stores everything in `~/.llm-wiki/index.sqlite` (Plan 1's schema).
+
+`pnpm cli --search "<query>"` runs a hybrid search: FTS5 BM25 + sqlite-vec cosine, merged via reciprocal rank fusion (RRF, k=60). Returns the top 10 chunks with body snippets and source URIs.
+
+```bash
+# Index a docs directory
+pnpm cli --index docs/
+
+# Search the indexed content
+pnpm cli --search "config-driven LLM provider"
+
+# Re-index — DocumentIndexer is idempotent. Existing chunks for the
+# same (source_id, uri) are replaced; no duplicates.
+pnpm cli --index docs/
+```
+
+The first index of a directory pays the ONNX embedder cold-start (~4.5s). Subsequent calls in the same process are fast.
+
+### What's indexed today (Plan 3a)
+
+- Plain markdown / text files only. PDF and HTML support arrives in Plan 3b.
+- Local filesystem source only. MCP-driven indexing arrives in Plan 3f.
+- No code-aware chunking; that's Plan 3c.
+- No cross-source link enrichment; that's Plan 3e.
