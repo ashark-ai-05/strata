@@ -531,6 +531,40 @@ pnpm cli --index-code src/
 # Then in the app, search "auth" or "MCPSource" — chunks should land as widgets
 ```
 
-### What's next (Plan 4e)
+### Canvas templates (Plan 4e)
 
-- **4e**: Canvas templates — AskAnything (free), TellMeAboutX (grid with named zones), WhatsNewSinceY (timeline), TraceXEverywhere (graph)
+Four layouts you can switch between via the "layout" dropdown (top-right of the canvas, beside the SearchBar):
+
+| Template | Layout | Best for |
+| --- | --- | --- |
+| **Ask anything** (default) | Cluster-by-kind grid — one column per Result.kind | Open-ended questions, "what's around" |
+| **Tell me about X** | 5-zone grid: Header / Code (left) / Docs (centre) / Activity (right) / Related (bottom) | Subject deep-dives — see code, docs, and activity around one thing at a glance |
+| **What's new since Y** | Lanes per source, x-axis = `fetchedAt` time, oldest left → newest right | Catch-up after time off, recent activity |
+| **Trace X everywhere** | Radial — subject card centred, results placed at angles around it | Cross-source references to a name/symbol |
+
+Pick a layout, run a search — results materialize using that layout. Switching templates only affects new placements; existing shapes stay where they are.
+
+#### Adding a template
+
+Each template is a layout function at `app/src/canvas/templates/<id>.ts`:
+
+```typescript
+export const layout: TemplateLayout = (results, viewport) => {
+  return results.map((r, i) => ({
+    shapeType: '...',
+    x: ..., y: ...,
+    props: shapeProps('...', r, { w: 320, h: 200 }),
+  }));
+};
+```
+
+Register in `app/src/canvas/templates/index.ts`. The TemplatePicker picks it up automatically.
+
+### What's next
+
+Plan 4e closes out the v1 visual surface. Future plans:
+
+- **Plan 5**: Agent loop — chat output triggers searches and dispatches widgets to the active template autonomously
+- **Plan 3e**: Cross-source link resolver — turns `JIRA-123`, file paths, k8s names in widget bodies into clickable shape-to-shape links on the canvas
+- **Plan 3b**: PDF + HTML in document indexer
+- **Plan 3c.1+**: Python / Go / Java / Ruby code adapters
