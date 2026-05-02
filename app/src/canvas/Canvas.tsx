@@ -13,6 +13,7 @@ import {
 } from './persistence';
 import { DebugToolbar } from '../components/DebugToolbar';
 import { SearchBar } from '../components/SearchBar';
+import { TemplatePicker } from '../components/TemplatePicker';
 
 const customShapeUtils = [
   // Plan 4b — proof-of-wire (kept for backwards compat with saved canvases)
@@ -60,6 +61,7 @@ export function Canvas() {
       >
         <DebugToolbar />
         <SearchBar />
+        <TemplatePicker />
       </Tldraw>
     </div>
   );
