@@ -462,11 +462,32 @@ The app's component tests use `@testing-library/react` + `jsdom`. Existing Node-
 - lucide-react for icons
 - Vitest + @testing-library/react + jsdom for tests
 
-### What's next (Plan 4b+)
+### Canvas (Plan 4b)
 
-Plan 4a (this) ships the chat shell. Future plans layer on:
+The main view splits into an infinite canvas (top) and the chat panel (bottom). Canvas state auto-saves to `localStorage['llm-wiki:canvas:default']` on every change (500ms debounce). Refreshing the page restores the canvas.
 
-- **4b**: tldraw infinite canvas + Widget abstraction + canvas persistence
-- **4c**: Widget catalog (Markdown, CodeBlock, TicketCard, SearchResults, SourceProbe)
+To clear the canvas: open DevTools console and run
+
+```js
+localStorage.removeItem('llm-wiki:canvas:default')
+```
+
+then reload.
+
+#### Custom widgets (extension point)
+
+Each widget is a tldraw [custom shape](https://tldraw.dev/docs/shapes#Custom-shapes) registered in `app/src/canvas/shapes/`. The `Widget` interface from `src/core/widget.ts` (mirrors design spec §3) ties the shape to one or more `ResultKind` values for the future result dispatcher (Plan 4d).
+
+Adding a new widget:
+
+1. Create `app/src/canvas/shapes/<name>.tsx` with a `ShapeUtil` class
+2. Add it to the `customShapeUtils` array in `app/src/canvas/Canvas.tsx`
+3. (Plan 4d) Map a `ResultKind` to its shape type in the dispatcher
+
+The TextNoteShape (`llm-wiki:text-note`) is the proof-of-wire example — Plan 4c replaces it with a real widget catalog.
+
+### What's next (Plan 4c–4e)
+
+- **4c**: Built-in widget catalog (Markdown, CodeBlock, TicketCard, SearchResults, SourceProbe)
 - **4d**: Result dispatcher — agent output materialises as widgets on the canvas
 - **4e**: Canvas templates (AskAnything, TellMeAboutX, WhatsNewSinceY, TraceXEverywhere)
