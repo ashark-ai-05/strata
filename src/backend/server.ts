@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { BackendState } from './state.js';
 import { healthRoute } from './routes/health.js';
 import { queryOpenAIRoute } from './routes/query-openai.js';
+import { chatRoute } from './routes/chat.js';
 import { searchRoute } from './routes/search.js';
 
 /**
@@ -174,6 +175,18 @@ app.post('/v1/query', async (c) => {
   lazyApp.post('/v1/query/openai', async (c) => {
     const state = await getState();
     const sub = queryOpenAIRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  app.route('/', lazyApp);
+}
+
+// Chat (AI SDK 6 UI Message Stream protocol) — used by the React app's useChat hook.
+// For OpenAI-compat callers, use /v1/query/openai instead.
+{
+  const lazyApp = new Hono();
+  lazyApp.post('/v1/chat', async (c) => {
+    const state = await getState();
+    const sub = chatRoute(state);
     return sub.fetch(c.req.raw);
   });
   app.route('/', lazyApp);

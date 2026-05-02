@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 export function Chat() {
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: '/v1/query/openai' }),
+    transport: new DefaultChatTransport({ api: '/v1/chat' }),
   });
   const [input, setInput] = useState('');
   const isStreaming = status === 'streaming';

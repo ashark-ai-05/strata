@@ -170,3 +170,54 @@ describe('POST /v1/query/openai', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('POST /v1/chat (AI SDK UI Message Stream)', () => {
+  it('returns 400 when messages is missing or empty', async () => {
+    const r1 = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(r1.status).toBe(400);
+
+    const r2 = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ messages: [] }),
+    });
+    expect(r2.status).toBe(400);
+  });
+
+  it('returns 400 when last user message has empty text', async () => {
+    const res = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ id: 'm1', role: 'user', parts: [] }],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('streams the UIMS protocol with the v1 marker header', async () => {
+    const res = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: 'c1',
+        trigger: 'submit-message',
+        messages: [
+          {
+            id: 'm1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'hi' }],
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    // Marker header is what DefaultChatTransport sniffs to recognise the protocol.
+    expect(res.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
+    expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
+  });
+});
