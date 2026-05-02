@@ -50,6 +50,8 @@ async function main(): Promise<void> {
       'call-tool': { type: 'string' },
       index: { type: 'string' },
       search: { type: 'string' },
+      'index-code': { type: 'string' },
+      'search-symbols': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
     allowPositionals: true,
@@ -221,6 +223,77 @@ async function main(): Promise<void> {
       console.log(`[score ${r.score.toFixed(4)}] ${r.uri}`);
       console.log(`  ${snippet.replace(/\n/g, ' ')}`);
       console.log('');
+    }
+    store.close();
+    return;
+  }
+
+  // --index-code <path>: walk .ts/.tsx/.js/.jsx files and index symbols + chunks
+  if (values['index-code']) {
+    const path = values['index-code'] as string;
+    if (!path) {
+      console.error('Usage: pnpm cli --index-code <path>');
+      process.exit(1);
+    }
+
+    const { activeProfile } = loadConfig(profileOverride);
+    const { openDefaultStore } = await import('./storage/store.js');
+    const { CodeIndexer } = await import('./indexer/code/code-indexer.js');
+
+    const store = await openDefaultStore();
+    const embedder = createEmbedder(activeProfile);
+    const indexer = new CodeIndexer({ store, embedder });
+
+    const sourceId = `local-code:${path}`;
+    console.log(`Indexing code at ${path} (source: ${sourceId})…`);
+    const t0 = performance.now();
+    const result = await indexer.run({ rootPath: path, sourceId });
+    const ms = Math.round(performance.now() - t0);
+
+    console.log(`indexed:  ${result.indexedFiles} files`);
+    console.log(`symbols:  ${result.symbols}`);
+    console.log(`chunks:   ${result.chunks}`);
+    console.log(`time:     ${ms} ms`);
+    if (result.errors.length > 0) {
+      console.log(`errors:   ${result.errors.length}`);
+      for (const err of result.errors.slice(0, 5)) {
+        console.log(`  - ${err.path}: ${err.error}`);
+      }
+    }
+    store.close();
+    return;
+  }
+
+  // --search-symbols <name>: search symbols table by name substring
+  if (values['search-symbols']) {
+    const name = values['search-symbols'] as string;
+    if (!name) {
+      console.error('Usage: pnpm cli --search-symbols <name-substring>');
+      process.exit(1);
+    }
+
+    const { openDefaultStore } = await import('./storage/store.js');
+    const store = await openDefaultStore();
+
+    const rows = store.db
+      .prepare(
+        `SELECT name, kind, lang, file, source_id
+         FROM symbols
+         WHERE name LIKE ?
+         ORDER BY name
+         LIMIT 50`
+      )
+      .all(`%${name}%`) as {
+        name: string;
+        kind: string;
+        lang: string;
+        file: string;
+        source_id: string;
+      }[];
+
+    console.log(`symbols matching "${name}": ${rows.length}`);
+    for (const row of rows) {
+      console.log(`  ${row.kind.padEnd(11)} ${row.name.padEnd(28)} ${row.file}`);
     }
     store.close();
     return;
