@@ -23,7 +23,12 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 
 export type ClaudeAgentSdkConfig = {
   model?: string;
+  /** Optional default system prompt (overridden per-request via QueryRequest.systemPrompt). */
+  systemPrompt?: string;
 };
+
+const DEFAULT_SYSTEM_PROMPT =
+  'You are llm-wiki, a focused personal knowledge assistant. Answer accurately and concisely.';
 
 export class ClaudeAgentSdkAdapter implements LLMProvider {
   readonly id = 'claude-agent-sdk';
@@ -36,13 +41,26 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
     // Dynamic import keeps startup fast when this provider is not active.
     const { query: sdkQuery } = await import('@anthropic-ai/claude-agent-sdk');
 
-    const prompt = request.systemPrompt
-      ? `${request.systemPrompt}\n\n${request.prompt}`
-      : request.prompt;
+    // Pass system prompt through the SDK option (NOT prepended to the user
+    // prompt) so the model treats it as a system role. Using a simple string
+    // also skips the default Claude Code preset, which loads dynamic
+    // sections (cwd, memory, git status) that can produce empty cache_control
+    // text blocks the Anthropic API now rejects.
+    const systemPrompt =
+      request.systemPrompt ??
+      this.config.systemPrompt ??
+      DEFAULT_SYSTEM_PROMPT;
 
-    const options = this.config.model ? { model: this.config.model } : {};
+    const options: Record<string, unknown> = {
+      systemPrompt,
+      // Don't load .claude/settings.json from the filesystem — we run the
+      // SDK programmatically with our own config; user/project/local
+      // settings would inject extra system prompt fragments we don't want.
+      settingSources: [],
+    };
+    if (this.config.model) options.model = this.config.model;
 
-    const sdkQuery_ = sdkQuery({ prompt, options });
+    const sdkQuery_ = sdkQuery({ prompt: request.prompt, options });
 
     try {
       for await (const message of sdkQuery_) {
