@@ -1,0 +1,133 @@
+/**
+ * ClaudeAgentSdkAdapter — uses @anthropic-ai/claude-agent-sdk (formerly Claude Code SDK).
+ *
+ * OAuth authentication is handled inside the SDK using the user's existing
+ * Claude Code / Claude.ai login — no API key required for OAuth users.
+ * Falls back to ANTHROPIC_API_KEY if set (for CI / API-key users).
+ *
+ * The SDK exposes a `query()` function that returns an AsyncGenerator of SDKMessage.
+ * We map the relevant message types to our ProviderEvent shape.
+ *
+ * Relevant SDKMessage types we handle:
+ *   - 'assistant'      → extract text_block content → text-delta events
+ *   - 'stream_event'   → BetaRawMessageStreamEvent deltas (fine-grained streaming)
+ *   - 'result'         → done event with usage
+ *   - 'assistant' with error field → error event
+ */
+import type { LLMProvider, ProviderEvent, QueryRequest, ProbeResult } from '../core/provider.js';
+
+// SDK types we need — imported as `type` to avoid pulling the entire SDK at import time
+// when it's not the active provider. The actual runtime import happens inside the methods.
+// (TypeScript will still type-check via the type imports at compile time.)
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+
+export type ClaudeAgentSdkConfig = {
+  model?: string;
+};
+
+export class ClaudeAgentSdkAdapter implements LLMProvider {
+  readonly id = 'claude-agent-sdk';
+  readonly name = 'Claude Agent SDK';
+  readonly kind = 'agent' as const;
+
+  constructor(private readonly config: ClaudeAgentSdkConfig = {}) {}
+
+  async *query(request: QueryRequest): AsyncIterable<ProviderEvent> {
+    // Dynamic import keeps startup fast when this provider is not active.
+    const { query: sdkQuery } = await import('@anthropic-ai/claude-agent-sdk');
+
+    const prompt = request.systemPrompt
+      ? `${request.systemPrompt}\n\n${request.prompt}`
+      : request.prompt;
+
+    const options = this.config.model ? { model: this.config.model } : {};
+
+    const sdkQuery_ = sdkQuery({ prompt, options });
+
+    try {
+      for await (const message of sdkQuery_) {
+        const events = this.mapMessage(message as SDKMessage);
+        for (const event of events) {
+          yield event;
+        }
+      }
+    } catch (err) {
+      yield {
+        type: 'error',
+        message: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  private mapMessage(message: SDKMessage): ProviderEvent[] {
+    const events: ProviderEvent[] = [];
+
+    if (message.type === 'assistant') {
+      // If the assistant message has an error, emit an error event
+      if (message.error) {
+        events.push({ type: 'error', message: `SDK error: ${message.error}` });
+        return events;
+      }
+      // Extract text and thinking blocks from the message content
+      for (const block of message.message.content) {
+        if (block.type === 'text') {
+          events.push({ type: 'text-delta', text: block.text });
+        } else if (block.type === 'thinking') {
+          events.push({ type: 'thinking-delta', text: block.thinking });
+        } else if (block.type === 'tool_use') {
+          events.push({
+            type: 'tool-call',
+            name: block.name,
+            input: block.input,
+          });
+        }
+      }
+    } else if (message.type === 'stream_event') {
+      // Fine-grained streaming events — emit text deltas as they arrive
+      const event = message.event;
+      if (
+        event.type === 'content_block_delta' &&
+        event.delta.type === 'text_delta'
+      ) {
+        events.push({ type: 'text-delta', text: event.delta.text });
+      } else if (
+        event.type === 'content_block_delta' &&
+        event.delta.type === 'thinking_delta'
+      ) {
+        events.push({ type: 'thinking-delta', text: event.delta.thinking });
+      }
+    } else if (message.type === 'result') {
+      if (message.subtype === 'success') {
+        events.push({
+          type: 'done',
+          usage: {
+            inputTokens: message.usage.input_tokens,
+            outputTokens: message.usage.output_tokens,
+          },
+        });
+      } else {
+        // result with error subtype
+        events.push({ type: 'error', message: 'Query ended with error result' });
+        events.push({ type: 'done' });
+      }
+    }
+
+    return events;
+  }
+
+  async probe(): Promise<ProbeResult> {
+    const start = Date.now();
+    try {
+      // Just import the SDK to verify it's installed and importable.
+      // We don't make a real API call here — that requires auth and network.
+      await import('@anthropic-ai/claude-agent-sdk');
+      const latencyMs = Date.now() - start;
+      return { ok: true, latencyMs };
+    } catch (err) {
+      return {
+        ok: false,
+        error: `Claude Agent SDK not available: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+}
