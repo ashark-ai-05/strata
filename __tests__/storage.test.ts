@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { openStore, loadInitialMigrations } from '../src/storage/store.js';
+import { openStore, loadInitialMigrations, openDefaultStore } from '../src/storage/store.js';
 import { migrate, getAppliedMigrations } from '../src/storage/migrations.js';
 
 describe('openStore', () => {
@@ -135,5 +135,22 @@ describe('chunks + embeddings smoke', () => {
     expect(nearest[0].distance).toBeLessThan(0.001);
 
     store.close();
+  });
+});
+
+describe('openDefaultStore', () => {
+  it('opens an in-memory store when LLM_WIKI_STORE_PATH=:memory:', async () => {
+    process.env['LLM_WIKI_STORE_PATH'] = ':memory:';
+    try {
+      const store = await openDefaultStore();
+      // Migrations are applied; chunks table should exist.
+      const tables = store.db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all() as { name: string }[];
+      expect(tables.some((t) => t.name === 'chunks')).toBe(true);
+      store.close();
+    } finally {
+      delete process.env['LLM_WIKI_STORE_PATH'];
+    }
   });
 });

@@ -1,7 +1,8 @@
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { Migration } from './migrations.js';
@@ -51,4 +52,25 @@ const __dirname = dirname(__filename);
 export async function loadInitialMigrations(): Promise<Migration[]> {
   const sql = await readFile(join(__dirname, 'migrations', '001_initial.sql'), 'utf8');
   return [{ id: '001_initial', sql }];
+}
+
+/**
+ * Opens the user-default store at `~/.llm-wiki/index.sqlite`, creating
+ * the directory and running migrations on first call. Override the path
+ * with the `LLM_WIKI_STORE_PATH` env var (set to `:memory:` for tests).
+ */
+export async function openDefaultStore(): Promise<Store> {
+  const override = process.env['LLM_WIKI_STORE_PATH'];
+  const path =
+    override ??
+    (() => {
+      const dir = `${homedir()}/.llm-wiki`;
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      return `${dir}/index.sqlite`;
+    })();
+
+  const store = await openStore({ path });
+  const { migrate } = await import('./migrations.js');
+  await migrate(store, await loadInitialMigrations());
+  return store;
 }
