@@ -1,0 +1,26 @@
+{
+  "name": "llm-wiki",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "*",
+    "@anthropic-ai/sdk": "*",
+    "openai": "*",
+    "ollama": "*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "tsx": "*",
+    "typescript": "*",
+    "vitest": "*",
+    "@types/node": "*"
+  }
+}

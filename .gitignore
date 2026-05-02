@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+.vitest-cache
+
+# spikes have their own node_modules
+spikes/node_modules
