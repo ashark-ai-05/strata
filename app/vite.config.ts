@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 export default defineConfig({
   root: __dirname,
@@ -26,6 +27,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test-setup.ts'],
+    setupFiles: [path.resolve(__dirname, 'src/test-setup.ts')],
+    include: [path.resolve(__dirname, '../__tests__/app/**/*.{test,spec}.?(c|m)[jt]s?(x)')],
   },
 });
