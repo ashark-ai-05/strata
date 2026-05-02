@@ -509,9 +509,28 @@ A small debug toolbar in the top-left of the canvas creates one example of each 
 1. Create `app/src/canvas/shapes/<name>.tsx` exporting a `ShapeUtil` (use any of the existing widgets as a template — they share `app/src/canvas/shapes/shared.tsx` for the card frame style)
 2. Register the `ShapeUtil` in `customShapeUtils` in `app/src/canvas/Canvas.tsx`
 3. Add a `Widget` entry in `src/core/widget-registry.ts` mapping the `ResultKind` to the new `shapeType`
-4. (Plan 4d) The dispatcher will pick up the new mapping automatically
+4. The dispatcher picks up the new mapping automatically
 
-### What's next (Plan 4d–4e)
+### Result dispatcher (Plan 4d)
 
-- **4d**: Result dispatcher — agent's `ResultEnvelope` outputs are routed to widgets on the canvas
-- **4e**: Canvas templates (AskAnything, TellMeAboutX, WhatsNewSinceY, TraceXEverywhere)
+The canvas now has a search overlay in the top-right. Type a query, press Search, and matching chunks from your indexed content materialize as widgets on the canvas (clustered by kind in columns).
+
+Under the hood:
+1. `SearchBar` POSTs to `/v1/search` with `{ query, limit }`
+2. Backend (`src/backend/routes/search.ts`) wraps `SearchService` from Plan 3a, hydrates each hit's `meta_json`, and returns `{ results: Result[] }` per spec §3
+3. `placeResultsOnCanvas(editor, results)` looks up each Result.kind in `WIDGET_REGISTRY` and calls `editor.createShape(...)` with the right shape type and props
+4. Layout strategy: simple cluster-by-kind grid (one column per kind, fills downward). Plan 4e adds template-driven layouts (timeline, graph, etc.)
+
+#### Try it
+
+```bash
+# Make sure something is indexed first
+pnpm cli --index docs/superpowers/
+pnpm cli --index-code src/
+
+# Then in the app, search "auth" or "MCPSource" — chunks should land as widgets
+```
+
+### What's next (Plan 4e)
+
+- **4e**: Canvas templates — AskAnything (free), TellMeAboutX (grid with named zones), WhatsNewSinceY (timeline), TraceXEverywhere (graph)
