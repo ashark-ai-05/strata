@@ -3,17 +3,22 @@ import { streamSSE } from 'hono/streaming';
 import { providerEventsToOpenAI } from '../openai-stream.js';
 import type { BackendState } from '../state.js';
 
+type ContentBlock = { type: string; text?: string };
 type OpenAIMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | { type: string; text?: string }[];
+  // Legacy / cURL shape: a string or array of {type,text}
+  content?: string | ContentBlock[];
+  // AI SDK 6 useChat shape: array of {type,text} parts, no top-level content
+  parts?: ContentBlock[];
 };
 
-function extractText(content: OpenAIMessage['content']): string {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content
+function extractText(message: OpenAIMessage): string {
+  const blocks = message.parts ?? message.content;
+  if (typeof blocks === 'string') return blocks;
+  if (Array.isArray(blocks)) {
+    return blocks
       .filter((c) => c.type === 'text' && typeof c.text === 'string')
-      .map((c) => c.text)
+      .map((c) => c.text as string)
       .join('');
   }
   return '';
@@ -37,11 +42,14 @@ export function queryOpenAIRoute(state: BackendState): Hono {
     if (!lastUser) {
       return c.json({ error: 'at least one user message is required' }, 400);
     }
-    const prompt = extractText(lastUser.content);
+    const prompt = extractText(lastUser);
+    if (!prompt.trim()) {
+      return c.json({ error: 'last user message has no text content' }, 400);
+    }
 
     // Extract any system message (use the LAST one if multiple).
     const systemMsg = [...body.messages].reverse().find((m) => m.role === 'system');
-    const systemPrompt = systemMsg ? extractText(systemMsg.content) : undefined;
+    const systemPrompt = systemMsg ? extractText(systemMsg) : undefined;
 
     return streamSSE(c, async (stream) => {
       const provider = state.getLLMProvider();

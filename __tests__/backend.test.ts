@@ -138,4 +138,35 @@ describe('POST /v1/query/openai', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
   });
+
+  it('accepts AI SDK 6 parts-array shape (no top-level content field)', async () => {
+    const res = await app.request('/v1/query/openai', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: 'c1',
+        trigger: 'submit-message',
+        messages: [
+          {
+            id: 'm1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'What is 2+2?' }],
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/text\/event-stream/);
+  });
+
+  it('returns 400 when last user message has empty text (parts shape)', async () => {
+    const res = await app.request('/v1/query/openai', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ id: 'm1', role: 'user', parts: [] }],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
 });
