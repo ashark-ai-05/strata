@@ -30,6 +30,8 @@
     "onnxruntime-node": "^1.20.0",
     "openai": "*",
     "sqlite-vec": "^0.1.6",
+    "tree-sitter-typescript": "^0.23.0",
+    "web-tree-sitter": "^0.24.0",
     "yaml": "^2.8.3",
     "zod": "*"
   },
