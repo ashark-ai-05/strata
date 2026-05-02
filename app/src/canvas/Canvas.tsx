@@ -12,6 +12,7 @@ import {
   saveCanvasSnapshot,
 } from './persistence';
 import { DebugToolbar } from '../components/DebugToolbar';
+import { SearchBar } from '../components/SearchBar';
 
 const customShapeUtils = [
   // Plan 4b — proof-of-wire (kept for backwards compat with saved canvases)
@@ -58,6 +59,7 @@ export function Canvas() {
         hideUi={false}
       >
         <DebugToolbar />
+        <SearchBar />
       </Tldraw>
     </div>
   );
