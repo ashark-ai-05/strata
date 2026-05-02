@@ -44,6 +44,10 @@ async function main(): Promise<void> {
       'list-profiles': { type: 'boolean' },
       embed: { type: 'string' },
       'storage-status': { type: 'boolean' },
+      'list-sources': { type: 'boolean' },
+      'probe-sources': { type: 'boolean' },
+      'list-tools': { type: 'string' },
+      'call-tool': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
     allowPositionals: true,
@@ -53,6 +57,103 @@ async function main(): Promise<void> {
   if (values.help) {
     printUsage();
     process.exit(0);
+  }
+
+  const profileOverride = values.profile as string | undefined;
+
+  // --list-sources: print configured sources from active profile
+  if (values['list-sources']) {
+    const { activeProfile } = loadConfig(profileOverride);
+    if (activeProfile.sources.length === 0) {
+      console.log('No sources configured for profile:', activeProfile.name);
+      console.log("Add sources to ~/.llm-wiki/config.json under profiles[].sources.");
+      return;
+    }
+    console.log(`Sources for profile '${activeProfile.name}':`);
+    for (const s of activeProfile.sources) {
+      const detail =
+        s.transport === 'stdio'
+          ? `${s.command} ${s.args.join(' ')}`
+          : s.url;
+      console.log(`  - ${s.id.padEnd(20)} (${s.transport})  ${s.name}  ${detail}`);
+    }
+    return;
+  }
+
+  // --probe-sources: connect every source, print health + tool count
+  if (values['probe-sources']) {
+    const { activeProfile } = loadConfig(profileOverride);
+    const { SourceRegistry } = await import('./mcp/registry.js');
+    const registry = new SourceRegistry();
+    const { ok, failed } = await registry.connectAll(activeProfile.sources);
+
+    for (const s of ok) {
+      console.log(`[OK]   ${s.id.padEnd(20)} ${s.name}  tools=${s.tools.length}`);
+    }
+    for (const f of failed) {
+      console.log(`[FAIL] ${f.config.id.padEnd(20)} ${f.config.name}  ${f.error}`);
+    }
+
+    await registry.closeAll();
+    return;
+  }
+
+  // --list-tools <source-id>: connect one source, print its tool catalog
+  if (values['list-tools']) {
+    const sourceId = values['list-tools'] as string;
+    const { activeProfile } = loadConfig(profileOverride);
+    const config = activeProfile.sources.find((s) => s.id === sourceId);
+    if (!config) {
+      console.error(`No source with id '${sourceId}' in profile '${activeProfile.name}'.`);
+      process.exit(1);
+    }
+    const { createMcpClient } = await import('./mcp/transport.js');
+    const { MCPSource } = await import('./mcp/source.js');
+    const client = await createMcpClient(config);
+    const source = new MCPSource(config.id, config.name, client);
+    await source.introspect();
+    console.log(`Tools for ${source.name} (${source.tools.length}):`);
+    for (const t of source.tools) {
+      console.log(`  - ${t.name.padEnd(28)} ${t.description ?? ''}`);
+    }
+    await source.close();
+    return;
+  }
+
+  // --call-tool <source-id> <tool-name> [json-args]: call a single tool
+  if (values['call-tool']) {
+    const sourceId = values['call-tool'] as string;
+    const toolName = positionals[0];
+    const argsJson = positionals[1] ?? '{}';
+    if (!toolName) {
+      console.error('Usage: pnpm cli --call-tool <source-id> <tool-name> [json-args]');
+      process.exit(1);
+    }
+    let toolArgs: unknown;
+    try {
+      toolArgs = JSON.parse(argsJson);
+    } catch (e) {
+      console.error('Invalid JSON args:', e instanceof Error ? e.message : String(e));
+      process.exit(1);
+    }
+
+    const { activeProfile } = loadConfig(profileOverride);
+    const config = activeProfile.sources.find((s) => s.id === sourceId);
+    if (!config) {
+      console.error(`No source with id '${sourceId}' in profile '${activeProfile.name}'.`);
+      process.exit(1);
+    }
+    const { createMcpClient } = await import('./mcp/transport.js');
+    const { MCPSource } = await import('./mcp/source.js');
+    const client = await createMcpClient(config);
+    const source = new MCPSource(config.id, config.name, client);
+    try {
+      const result = await source.callTool(toolName, toolArgs);
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      await source.close();
+    }
+    return;
   }
 
   // --storage-status: open the DB, run migrations, show table stats
