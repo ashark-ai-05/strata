@@ -76,7 +76,7 @@ browser is canvas source of truth.** Approaches 2 (browser-hosted MCP) and 3
 └───────────┴────────────────────────────────────────────────────────────────┘
 ```
 
-**Components.** Five new files, four extended:
+**Components.** 13 new files (1 registry + 9 per-tool files + payloads + snapshot type + enums), 6 extended:
 
 | File | Status | Responsibility |
 |------|--------|----------------|
@@ -173,6 +173,20 @@ The 9 tools:
   without waiting for a browser round-trip.
 - `switch_template`, `focus_widget`, `clear_canvas`: validate input, return
   the directive. No I/O, no id minting.
+
+**Two id namespaces, one type.** Both are strings, but they live in
+different worlds and must not be conflated:
+
+- **Search result ids** (consumed by `fetch_result`) come from the search
+  index. Format: `"<source>:<chunkId>"` (e.g., `"docs:auth-overview"`).
+- **Canvas widget ids** (consumed by `read_widget`, `focus_widget`,
+  `link_widgets`) are the UUIDs minted by `place_widget` /
+  `link_widgets` and live in the `canvasSnapshot`.
+
+The system prompt does not need to spell this out — the model can tell
+from context which tool to use — but the tool descriptions (column 5 of
+the table) reference "search result" and "canvas widget" explicitly so
+the model never confuses them.
 
 ## 3. Data flow
 
@@ -290,19 +304,22 @@ Search before citing — never invent ids, urls, or quotes.
 
 ### Token budget per turn (rough)
 
+The canvas snapshot is **not** sent to the model directly — it lives in
+backend memory and is read on demand via the `read_canvas` / `read_widget`
+tools. So the model only pays for canvas awareness when it asks.
+
 | Component | First turn (cold) | Repeat turn (cached) |
 |-----------|-------------------|----------------------|
 | System prompt | 95 | ~10 (cached) |
 | Tool definitions | ~1500 | ~150 (cached) |
-| Canvas snapshot | 200–1000 (varies) | 200–1000 |
 | Conversation history | 0–2000 | 0–2000 |
 | User prompt | 50–200 | 50–200 |
-| **Input total** | ~2K–5K | ~500–3K |
+| **Input total (no tool calls yet)** | ~1.6K–3.8K | ~200–2.4K |
 | Tool I/O (per call) | 300–800 | same |
 | Output tokens | up to 8K | up to 8K |
 
-Target per-turn cost for a typical "look up X and place 3 widgets" flow:
-~3K input + ~1.5K output, ~$0.05/turn on Opus 4.7.
+Target per-turn cost for a typical "look up X and place 3 widgets" flow
+(≈ 3 tool calls): ~3K input + ~1.5K output, ~$0.05/turn on Opus 4.7.
 
 ## 4. Error handling
 
@@ -318,7 +335,11 @@ try {
   return await runHandler(parsed);
 } catch (e) {
   if (e instanceof z.ZodError) {
-    throw new Error(`Invalid input for ${toolName}: ${formatZodError(e)}`);
+    // e.issues is an array of {path, message, code} — JSON-stringify is fine
+    // for the model; readable enough.
+    throw new Error(
+      `Invalid input for ${toolName}: ${JSON.stringify(e.issues)}`,
+    );
   }
   throw e;
 }
