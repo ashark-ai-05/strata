@@ -10,11 +10,7 @@
     "typecheck": "tsc --noEmit",
     "backend": "bash scripts/backend.sh",
     "backend:check": "bash scripts/backend.sh --smoke",
-    "dev:full": "concurrently --names 'backend,space-agent,app' --kill-others --kill-others-on-fail 'pnpm backend' 'pnpm dev' 'pnpm app'",
-    "dev:app": "concurrently --names 'backend,app' --kill-others --kill-others-on-fail 'pnpm backend' 'pnpm app'",
-    "setup": "bash scripts/setup-space-agent.sh",
-    "dev": "bash scripts/dev-space-agent.sh",
-    "dev:check": "bash scripts/dev-space-agent.sh --smoke",
+    "dev": "concurrently --names 'backend,app' --kill-others --kill-others-on-fail 'pnpm backend' 'pnpm app'",
     "app": "vite --config app/vite.config.ts",
     "app:build": "vite build --config app/vite.config.ts",
     "app:preview": "vite preview --config app/vite.config.ts"

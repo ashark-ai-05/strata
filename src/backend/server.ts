@@ -18,8 +18,10 @@ import { searchRoute } from './routes/search.js';
  */
 export const app = new Hono();
 
-// CORS: allow the space-agent frontend (default :3456) to call our backend (:3457).
-// Mirror the request origin — safe for localhost-only deployments.
+// CORS: the Vite dev server proxies /v1/* to this backend (same-origin from
+// the browser's POV) so CORS is technically not needed in dev. We mirror the
+// request origin anyway as a belt-and-braces measure for direct curl/SDK use
+// from other localhost ports. Safe for localhost-only deployments.
 app.use('/*', cors({ origin: (o) => o, allowMethods: ['GET', 'POST', 'OPTIONS'] }));
 
 let statePromise: Promise<BackendState> | null = null;

@@ -191,55 +191,38 @@ The bundled ONNX embedder takes ~4.5s on first call (M-series CPU; spike 03 meas
 
 ---
 
-## Running the desktop app shell
+## Running the app
 
-The desktop app is built on a vendored copy of [space-agent](https://github.com/agent0ai/space-agent), pinned to commit `9c26f9f`. It is cloned into `vendor/space-agent/` (gitignored) on first setup, with our extensions mounted from `customware/`.
+The desktop app is a native Vite + React + tldraw SPA backed by our Hono backend. There are two processes:
 
-### First-time setup
+- **Backend** on `http://127.0.0.1:3457` — Hono server hosting `/v1/chat`, `/v1/search`, `/v1/health`, etc.
+- **Vite dev server** on `http://127.0.0.1:3458` — serves the SPA with HMR. Vite proxies `/v1/*` to the backend so the browser sees a same-origin API.
 
-```bash
-pnpm setup
-```
-
-This clones space-agent (~150 packages, ~30s), pins it to the recorded SHA, runs `npm install` inside it, and creates a default admin user (username `admin`, password `change-me-now`).
-
-The script is idempotent — re-running is safe.
-
-### Boot
+### Boot both at once
 
 ```bash
 pnpm dev
 ```
 
-This starts space-agent on http://127.0.0.1:3456 with `CUSTOMWARE_PATH` pointing at our `customware/` directory. Override the port with `PORT=3457 pnpm dev`.
+Starts backend + Vite concurrently via `concurrently`. Ctrl-C terminates both. Open `http://127.0.0.1:3458`.
 
-Log in as `admin` / `change-me-now`. You should see a yellow banner at the bottom of the main dashboard view confirming our extension layer is loaded. The banner is injected via the `_core/dashboard/content_end` seam.
-
-### Smoke check (no UI)
+### Boot individually
 
 ```bash
-pnpm dev:check
+pnpm backend     # backend only on :3457
+pnpm app         # Vite only on :3458 (will fail API calls without backend running)
 ```
 
-Boots the server, makes one HTTP request, and exits 0 on success. Used by CI.
+### Production build
 
-### What's wired in v1.5
+```bash
+pnpm app:build       # outputs to app/dist/
+pnpm app:preview     # serves the build for sanity-checking
+```
 
-- Vendored space-agent at a pinned upstream commit (`9c26f9f`)
-- `customware/` directory mounted via `CUSTOMWARE_PATH`
-- One proof-of-wire HTML extension (dashboard banner at `_core/dashboard/content_end`)
+### Historical note
 
-### What's NOT wired yet (Plan 1.6 and later)
-
-- LLM provider integration — chat currently uses space-agent's defaults, not our `LLMProvider` adapter
-- Embedder pre-warm on launch
-- Profile config bridge (our `~/.llm-wiki/config.json` does not yet flow into space-agent's chat surface)
-- MCP source connectors (Plan 2)
-- Widgets and canvas templates (Plans 5–7)
-
-### Updating the pinned commit
-
-Edit `PINNED_SHA` in `scripts/setup-space-agent.sh`, run `pnpm setup`, then `pnpm dev:check` to verify boot still works. Per Spike 05, upstream churn is concentrated in areas we don't extend (Electron host, login UI, agent chat), so pin updates should be low-friction. Commit the pin update with the SHA in the message.
+Pre-Plan 5 the app shell was a vendored fork of [agent0ai/space-agent](https://github.com/agent0ai/space-agent) with extensions under `customware/`. That approach was pivoted away from in favour of the native stack above; the vendor + customware infrastructure has been removed. Plans 1.5–1.7 reference the old workflow and are kept for historical record only.
 
 ---
 
@@ -297,12 +280,11 @@ pnpm cli --call-tool workspace-fs read_file '{"path": "/Users/me/code/README.md"
 
 ## Running the backend
 
-The backend exposes our LLM provider, embedder, and MCP source registry over HTTP so space-agent's customware can route through them.
+The backend exposes the LLM provider, embedder, MCP source registry, search, and chat tool-loop over HTTP. The Vite dev server proxies `/v1/*` to it.
 
 ### Ports and env
 
-- Default port: `3457`. Override with `LLM_WIKI_BACKEND_PORT=3458 pnpm backend`.
-- Default URL for customware: `http://127.0.0.1:3457`. Override with `LLM_WIKI_BACKEND_URL=...` when launching space-agent.
+- Default port: `3457`. Override with `LLM_WIKI_BACKEND_PORT=3460 pnpm backend` (don't collide with Vite on `3458`).
 
 ### Smoke check
 
@@ -337,28 +319,6 @@ curl -N http://127.0.0.1:3457/v1/query \
   -H 'content-type: application/json' \
   -d '{"prompt":"What is 2+2?"}'
 ```
-
-## Running everything
-
-```bash
-pnpm dev:full
-```
-
-Starts the backend AND space-agent concurrently. Open http://127.0.0.1:3456 to log in. The login hook (`customware/.../any_login/llm-wiki-init.js`) calls the backend `/v1/health`, then fires a fire-and-forget `/v1/embed` call to pre-warm the ONNX model — by the time you start chatting, the embedder is hot.
-
-### Chat actually flows through llm-wiki
-
-After Plan 1.7, the chat in space-agent's UI routes through our backend's `/v1/query/openai` endpoint, which calls whatever `LLMProvider` is configured in the active llm-wiki profile.
-
-**Flow:**
-1. Browser POSTs to `http://127.0.0.1:3456/...` (space-agent's chat endpoint)
-2. Space-agent's `prepareOnscreenAgentApiRequest/end/llm-wiki.js` hook redirects the request URL to `http://127.0.0.1:3457/v1/query/openai`
-3. Our backend extracts the user prompt + system message, calls `LLMProvider.query()`, and streams back as OpenAI chat-completions SSE
-4. Space-agent's existing streaming consumer renders the response
-
-To verify it's actually llm-wiki and not space-agent's default: open browser DevTools → Network → filter for `:3457`. You should see one or more POSTs to `/v1/query/openai` per chat turn.
-
-**To bypass llm-wiki and use space-agent's default provider:** stop the backend (`pnpm dev:full` would need to be restarted with backend disabled, or set `LLM_WIKI_BACKEND_URL=http://invalid:0` so the health check fails and the hook falls through). The fall-through is intentional — if our backend is down, space-agent still functions.
 
 ---
 
@@ -422,7 +382,7 @@ The native React + Vite UI lives at `app/`. Talks to the Hono backend on `:3457`
 
 ```bash
 # Start backend + app together (recommended)
-pnpm dev:app
+pnpm dev
 # → backend on :3457, app on :3458
 
 # Open http://localhost:3458
