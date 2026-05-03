@@ -21,8 +21,10 @@ const PHASES = [
 type PhaseStatus = 'pending' | 'active' | 'complete';
 
 export function TeamProgress({ messages }: { messages: UIMessage[] }) {
-  const statuses = computeStatuses(messages);
+  const { statuses, current } = computeAgentActivity(messages);
   const visible = Object.values(statuses).some((s) => s !== 'pending');
+  const activeTint =
+    current && PHASES.find((p) => p.role === current.agent)?.tint;
 
   return (
     <AnimatePresence>
@@ -49,10 +51,65 @@ export function TeamProgress({ messages }: { messages: UIMessage[] }) {
               ))}
             </div>
           </div>
+          {/* Live "what's the active agent doing right now" line. Tracks the
+              most recent in-flight tool call attributed to whichever agent's
+              phase is currently open. Disappears the instant the tool's
+              output arrives. */}
+          <AnimatePresence mode="wait">
+            {current && (
+              <motion.div
+                key={`${current.agent}-${current.toolCallId}`}
+                initial={{ opacity: 0, y: -2 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -2 }}
+                transition={{ duration: 0.18 }}
+                className="px-5 pb-3 -mt-1 flex items-center gap-2 text-[12px]"
+              >
+                <span
+                  className="inline-block size-1.5 rounded-full"
+                  style={{
+                    background: activeTint ?? 'var(--color-accent)',
+                    boxShadow: `0 0 6px 0 ${activeTint ?? 'var(--color-accent)'}`,
+                    animation: 'strata-team-pulse 1.4s ease-in-out infinite',
+                  }}
+                />
+                <span className="text-zinc-500">
+                  {agentVerb(current.tool)}
+                </span>
+                <span
+                  className="font-mono truncate"
+                  style={{ color: activeTint ?? '#a78bfa' }}
+                >
+                  {current.tool}
+                </span>
+                {current.preview && (
+                  <span className="text-zinc-500 truncate font-mono text-[11px]">
+                    {current.preview}
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>
   );
+}
+
+/**
+ * Verb tense for the live indicator — keeps it readable without leaning
+ * on the tool name to also be a verb. Falls back to "calling" for unknowns.
+ */
+function agentVerb(tool: string): string {
+  const t = tool.toLowerCase();
+  if (t.includes('search')) return 'searching';
+  if (t.includes('fetch') || t.includes('read')) return 'reading';
+  if (t.includes('place')) return 'placing';
+  if (t.includes('link')) return 'linking';
+  if (t.includes('focus')) return 'focusing';
+  if (t.includes('clear')) return 'clearing';
+  if (t.includes('switch')) return 'switching to';
+  return 'running';
 }
 
 function PhaseNode({
@@ -132,18 +189,35 @@ function PhaseDot({ status, tint }: { status: PhaseStatus; tint: string }) {
 }
 
 /**
- * Walk the latest assistant message's parts looking for data-team-phase
- * signals. AI SDK 6 surfaces custom data parts as `{type: 'data-<name>',
- * data: {...}}`. Earlier messages are ignored — the pipeline only
- * reflects the IN-FLIGHT or MOST-RECENT team run, not historical ones.
+ * Walk the latest assistant message's parts in stream order, tracking:
+ *   1. Each agent's status (pending / active / complete) from the
+ *      data-team-phase signals
+ *   2. Which agent's phase is currently OPEN (start emitted, complete not yet)
+ *   3. The most recent in-flight tool call attributed to that agent —
+ *      the call whose state is input-available/streaming and whose
+ *      toolCallId hasn't seen a matching output-available/error yet.
+ *
+ * Returns both the per-agent statuses and the live activity, so the
+ * timeline can render dots + a "currently doing" line.
  */
-function computeStatuses(messages: UIMessage[]): Record<string, PhaseStatus> {
+type AgentActivity = {
+  statuses: Record<string, PhaseStatus>;
+  current:
+    | {
+        agent: string;
+        tool: string;
+        toolCallId: string;
+        preview: string | null;
+      }
+    | null;
+};
+
+function computeAgentActivity(messages: UIMessage[]): AgentActivity {
   const init: Record<string, PhaseStatus> = {
     research: 'pending',
     build: 'pending',
     review: 'pending',
   };
-  // Find the last assistant message (most recent).
   let lastAssistant: UIMessage | undefined;
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i]!.role === 'assistant') {
@@ -151,23 +225,82 @@ function computeStatuses(messages: UIMessage[]): Record<string, PhaseStatus> {
       break;
     }
   }
-  if (!lastAssistant) return init;
+  if (!lastAssistant) return { statuses: init, current: null };
+
+  let openAgent: string | null = null;
+  // Track the most recent in-flight call. We update as we walk; if a
+  // matching output-available comes later in stream order, we clear it.
+  let inFlight: AgentActivity['current'] = null;
 
   for (const p of lastAssistant.parts as Array<{
     type: string;
+    state?: string;
+    toolCallId?: string;
+    toolName?: string;
+    input?: unknown;
     data?: { agent?: string; status?: string };
   }>) {
-    if (p.type !== 'data-team-phase') continue;
-    const agent = p.data?.agent;
-    const status = p.data?.status;
-    if (!agent || !(agent in init)) continue;
-    if (status === 'start') {
-      init[agent] = 'active';
-    } else if (status === 'complete') {
-      init[agent] = 'complete';
+    if (p.type === 'data-team-phase') {
+      const agent = p.data?.agent;
+      const status = p.data?.status;
+      if (!agent || !(agent in init)) continue;
+      if (status === 'start') {
+        init[agent] = 'active';
+        openAgent = agent;
+      } else if (status === 'complete') {
+        init[agent] = 'complete';
+        if (openAgent === agent) openAgent = null;
+        // Clear in-flight when the phase closes — its tools are done by then.
+        if (inFlight && inFlight.agent === agent) inFlight = null;
+      }
+    } else if (
+      (p.type === 'dynamic-tool' || p.type.startsWith('tool-')) &&
+      openAgent &&
+      p.toolCallId
+    ) {
+      const tool = readToolName(p.type, p.toolName);
+      if (p.state === 'input-available' || p.state === 'input-streaming') {
+        inFlight = {
+          agent: openAgent,
+          tool,
+          toolCallId: p.toolCallId,
+          preview: previewInput(p.input),
+        };
+      } else if (
+        (p.state === 'output-available' || p.state === 'output-error') &&
+        inFlight?.toolCallId === p.toolCallId
+      ) {
+        inFlight = null;
+      }
     }
   }
-  return init;
+
+  return { statuses: init, current: inFlight };
+}
+
+/** Pretty tool name — strips `tool-` and `mcp__<server>__` prefixes. */
+function readToolName(type: string, dynamicToolName?: string): string {
+  if (type === 'dynamic-tool') return dynamicToolName ?? 'unknown';
+  const raw = type.slice('tool-'.length);
+  const last = raw.split('__').pop();
+  return last && last.length > 0 ? last : raw;
+}
+
+/** Compact preview of the active call's interesting argument. */
+function previewInput(input: unknown): string | null {
+  if (!input || typeof input !== 'object') return null;
+  const obj = input as Record<string, unknown>;
+  for (const k of ['query', 'q', 'path', 'id', 'url', 'pattern', 'name']) {
+    const v = obj[k];
+    if (typeof v === 'string' && v.length > 0) {
+      const trimmed = v.length > 56 ? `${v.slice(0, 55)}…` : v;
+      return `"${trimmed}"`;
+    }
+  }
+  if (typeof obj['kind'] === 'string' && typeof obj['role'] === 'string') {
+    return `${obj['kind']} → ${obj['role']}`;
+  }
+  return null;
 }
 
 const ROLE_TINT: Record<string, string> = {
