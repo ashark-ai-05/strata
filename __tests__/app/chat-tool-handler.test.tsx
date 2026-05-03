@@ -35,16 +35,24 @@ beforeEach(() => {
   cleanup();
 });
 
+// AI SDK 6 surfaces tool parts as:
+//   { type: 'tool-<NAME>' | 'dynamic-tool',
+//     state: 'input-available' | 'output-available' | 'output-error' | 'input-streaming',
+//     toolCallId, input?, output?, errorText? }
+// These tests use the real shape, NOT the wire-level UIMS chunk shape.
+
 describe('Chat tool handler', () => {
-  it('dispatches a place directive when output is an object with .directive', () => {
+  it('dispatches a place directive on tool-<name> output-available with .directive object', () => {
     messagesRef.current = [
       {
         id: 'm-1',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-1',
+            input: { kind: 'markdown', role: 'primary', payload: {} },
             output: {
               ok: true,
               id: 'w-1',
@@ -65,7 +73,7 @@ describe('Chat tool handler', () => {
     expect(applyMock.mock.calls[0]![1].type).toBe('place');
   });
 
-  it('parses string output (real MCP tool shape) and dispatches the directive', () => {
+  it('parses string output (real MCP wire shape) and dispatches', () => {
     const directive = {
       type: 'place',
       id: 'w-2',
@@ -79,8 +87,10 @@ describe('Chat tool handler', () => {
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-2',
+            input: {},
             output: JSON.stringify({ ok: true, id: 'w-2', directive }),
           },
         ],
@@ -91,15 +101,46 @@ describe('Chat tool handler', () => {
     expect(applyMock.mock.calls[0]![1]).toMatchObject(directive);
   });
 
-  it('does not double-apply on re-render', async () => {
+  it('also dispatches for dynamic-tool parts (MCP-loaded, alternate SDK shape)', () => {
+    messagesRef.current = [
+      {
+        id: 'm-dyn',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'dynamic-tool',
+            toolName: 'mcp__strata__place_widget',
+            state: 'output-available',
+            toolCallId: 'tc-dyn',
+            input: {},
+            output: {
+              directive: {
+                type: 'place',
+                id: 'w-dyn',
+                kind: 'markdown',
+                role: 'primary',
+                payload: { title: 't', body: 'b' },
+              },
+            },
+          },
+        ],
+      },
+    ];
+    render(<Chat />);
+    expect(applyMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not double-apply on re-render', () => {
     messagesRef.current = [
       {
         id: 'm-3',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-3',
+            input: {},
             output: {
               directive: {
                 type: 'place',
@@ -118,14 +159,33 @@ describe('Chat tool handler', () => {
     expect(applyMock).toHaveBeenCalledTimes(1);
   });
 
-  it('skips parts that are not tool-output-available', () => {
+  it('skips parts that are not tool parts at all', () => {
     messagesRef.current = [
       {
         id: 'm-4',
         role: 'assistant',
         parts: [
           { type: 'text', text: 'hello' },
-          { type: 'tool-input-available', toolCallId: 'tc-4', toolName: 'search_kb', input: {} },
+          { type: 'reasoning', text: 'thinking' },
+        ],
+      },
+    ];
+    render(<Chat />);
+    expect(applyMock).not.toHaveBeenCalled();
+  });
+
+  it('skips tool parts in non-output-available states (input-available, etc.)', () => {
+    messagesRef.current = [
+      {
+        id: 'm-input',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-mcp__strata__place_widget',
+            state: 'input-available',
+            toolCallId: 'tc-input',
+            input: { kind: 'markdown' },
+          },
         ],
       },
     ];
@@ -140,8 +200,10 @@ describe('Chat tool handler', () => {
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-5',
+            input: {},
             output: 'not json',
           },
         ],
@@ -151,15 +213,17 @@ describe('Chat tool handler', () => {
     expect(applyMock).not.toHaveBeenCalled();
   });
 
-  it('skips tool-output-available without a .directive field (e.g., search_kb result)', () => {
+  it('skips tool output without a .directive field (e.g., search_kb result)', () => {
     messagesRef.current = [
       {
         id: 'm-6',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__search_kb',
+            state: 'output-available',
             toolCallId: 'tc-6',
+            input: { query: 'a' },
             output: { results: [{ id: 'a', kind: 'doc', title: 't' }] },
           },
         ],
@@ -177,8 +241,10 @@ describe('Chat tool handler', () => {
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-7',
+            input: {},
             output: {
               directive: { type: 'place', id: 'x', kind: 'markdown', role: 'primary', payload: {} },
             },
@@ -192,71 +258,82 @@ describe('Chat tool handler', () => {
 });
 
 describe('Chat tool indicators', () => {
-  it('renders "calling <toolName>…" for tool-input-available parts', () => {
+  it('renders "calling <toolName>…" for tool-<name> parts in input-available state', () => {
     messagesRef.current = [
       {
         id: 'm-call',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-input-available',
+            type: 'tool-mcp__strata__search_kb',
+            state: 'input-available',
             toolCallId: 'tc-call',
-            toolName: 'search_kb',
             input: { query: 'auth' },
           },
         ],
       },
     ];
     const { getByText } = render(<Chat />);
+    // toolPartName strips 'tool-' and the 'mcp__<server>__' prefix → 'search_kb'
     expect(getByText(/calling search_kb/i)).toBeDefined();
   });
 
-  it('renders "tool error: <errorText>" for tool-output-error parts', () => {
+  it('renders "tool error" for tool parts in output-error state', () => {
     messagesRef.current = [
       {
         id: 'm-err',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-error',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-error',
             toolCallId: 'tc-err',
+            input: {},
             errorText: 'Invalid payload for kind=markdown',
           },
         ],
       },
     ];
     const { getByText } = render(<Chat />);
-    expect(getByText(/tool error: Invalid payload for kind=markdown/)).toBeDefined();
+    expect(getByText(/tool error \(place_widget\): Invalid payload for kind=markdown/)).toBeDefined();
   });
 
-  it('renders no visible indicator for tool-output-available (directive applied silently)', () => {
+  it('renders nothing visible for output-available (directive applied silently)', () => {
     messagesRef.current = [
       {
         id: 'm-out',
         role: 'assistant',
         parts: [
           {
-            type: 'tool-output-available',
+            type: 'tool-mcp__strata__place_widget',
+            state: 'output-available',
             toolCallId: 'tc-out',
-            output: { directive: { type: 'place', id: 'w', kind: 'markdown', role: 'primary', payload: {} } },
+            input: {},
+            output: {
+              directive: { type: 'place', id: 'w', kind: 'markdown', role: 'primary', payload: {} },
+            },
           },
         ],
       },
     ];
     const { container } = render(<Chat />);
-    // Message wrapper exists but no "calling" or "tool error" text
     expect(container.textContent).not.toMatch(/calling/i);
     expect(container.textContent).not.toMatch(/tool error/i);
   });
 
-  it('still renders text parts alongside indicators', () => {
+  it('renders text parts alongside tool indicators', () => {
     messagesRef.current = [
       {
         id: 'm-mixed',
         role: 'assistant',
         parts: [
           { type: 'text', text: 'Looking that up.' },
-          { type: 'tool-input-available', toolCallId: 'tc-x', toolName: 'fetch_result', input: { id: 'x' } },
+          {
+            type: 'tool-mcp__strata__fetch_result',
+            state: 'input-available',
+            toolCallId: 'tc-x',
+            input: { id: 'x' },
+          },
           { type: 'text', text: ' Here it is.' },
         ],
       },
@@ -265,5 +342,25 @@ describe('Chat tool indicators', () => {
     expect(getByText(/Looking that up\./)).toBeDefined();
     expect(getByText(/calling fetch_result/i)).toBeDefined();
     expect(getByText(/Here it is\./)).toBeDefined();
+  });
+
+  it('renders dynamic-tool input-available with toolName field', () => {
+    messagesRef.current = [
+      {
+        id: 'm-dyn-ind',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'dynamic-tool',
+            toolName: 'whatever_dynamic',
+            state: 'input-available',
+            toolCallId: 'tc-dyn-ind',
+            input: {},
+          },
+        ],
+      },
+    ];
+    const { getByText } = render(<Chat />);
+    expect(getByText(/calling whatever_dynamic/i)).toBeDefined();
   });
 });
