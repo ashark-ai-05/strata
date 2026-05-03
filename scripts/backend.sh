@@ -3,6 +3,15 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Auto-load .env if present so TAVILY_API_KEY / ANTHROPIC_API_KEY / etc. are
+# visible to the backend process. `set -a` exports each var as it's defined.
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 PORT="${STRATA_BACKEND_PORT:-3457}"
 
 if [ "${1:-}" = "--smoke" ]; then

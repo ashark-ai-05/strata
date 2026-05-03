@@ -33,6 +33,32 @@ export type ClaudeAgentSdkDeps = {
   webSearch?: AgentToolDeps['webSearch'];
 };
 
+/**
+ * The full set of Claude Agent SDK built-in tools. We disallow all of them
+ * so the only tool surface the model sees is our `mcp__strata__*` namespace.
+ * Without this, the model can fall back to e.g. SDK `WebSearch` when our
+ * MCP `web_search` returns empty, which triggers a permission prompt the
+ * non-interactive backend can't satisfy.
+ */
+const SDK_BUILTIN_TOOLS = [
+  'Bash',
+  'BashOutput',
+  'Edit',
+  'ExitPlanMode',
+  'Glob',
+  'Grep',
+  'KillShell',
+  'NotebookEdit',
+  'Read',
+  'Skill',
+  'SlashCommand',
+  'Task',
+  'TodoWrite',
+  'WebFetch',
+  'WebSearch',
+  'Write',
+];
+
 const DEFAULT_SYSTEM_PROMPT = `You are Strata, a knowledge assistant. The user has a canvas where you can place widgets to visualize answers spatially.
 
 When the user asks about a topic, ALWAYS call \`search_kb\` first. Do not ask for clarification on what to search — try a reasonable query against what they actually said. Only ask the user back if their message is genuinely ambiguous (e.g. a single pronoun with no antecedent).
@@ -167,6 +193,15 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
       // them by `mcp__<server>__<tool>` — we name the server `strata`.
       mcpServers: { 'strata': mcp },
       allowedTools: tools.map((t) => `mcp__strata__${t.name}`),
+      // Disallow every SDK built-in tool (Bash/Read/Edit/WebSearch/etc.) so
+      // the model can't fall back to them when our MCP tools return empty.
+      // Without this, the SDK's WebSearch fires when our `web_search` returns
+      // [] (e.g. no TAVILY_API_KEY), surfacing a confusing permission prompt.
+      disallowedTools: SDK_BUILTIN_TOOLS,
+      // Default permission mode prompts the user for unknown tools — for
+      // a non-interactive backend that just yields permission errors.
+      // 'dontAsk' = deny instead of prompt for anything not allow-listed.
+      permissionMode: 'dontAsk' as const,
       maxTurns: 10,
       maxOutputTokens: 8192,
       effort: 'medium',

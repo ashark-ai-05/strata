@@ -85,11 +85,10 @@ describe('createWebSearchProvider', () => {
     else process.env['TAVILY_API_KEY'] = ORIG_KEY;
   });
 
-  it('returns an empty-results stub when TAVILY_API_KEY is unset', async () => {
+  it('returns a stub that throws a configuration error when TAVILY_API_KEY is unset', async () => {
     delete process.env['TAVILY_API_KEY'];
     const p = createWebSearchProvider();
-    const r = await p.search('whatever', 5);
-    expect(r).toEqual([]);
+    await expect(p.search('whatever', 5)).rejects.toThrow(/TAVILY_API_KEY is not set/);
   });
 
   it('returns a real TavilyProvider when TAVILY_API_KEY is set', async () => {

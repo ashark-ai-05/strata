@@ -80,15 +80,20 @@ export class TavilyProvider implements WebSearchProvider {
 
 /**
  * Factory: returns a real TavilyProvider if TAVILY_API_KEY is set,
- * otherwise a stub that returns an empty result (so the tool surface
- * doesn't hard-fail when the user hasn't configured a key yet).
+ * otherwise a stub that throws a clear "not configured" error so the
+ * tool surface tells the agent (and ultimately the user) what to fix
+ * instead of silently returning empty — which previously caused the
+ * agent to fall back to other tools and produce confusing UX.
  */
 export function createWebSearchProvider(): WebSearchProvider {
   const key = process.env['TAVILY_API_KEY'] ?? '';
   if (!key) {
     return {
       async search(): Promise<WebSearchResult[]> {
-        return [];
+        throw new Error(
+          'web_search is not configured: TAVILY_API_KEY is not set. ' +
+            'Add it to .env (free tier: https://app.tavily.com) and restart the backend.',
+        );
       },
     };
   }
