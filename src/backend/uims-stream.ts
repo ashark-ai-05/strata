@@ -23,18 +23,34 @@ export const UIMS_HEADERS = {
   'x-accel-buffering': 'no',
 } as const;
 
+export type UimsFraming = {
+  /**
+   * Whether to emit the outer `start`/`finish`/`[DONE]` envelope. Single-call
+   * routes use 'full'; multi-phase orchestrators (team route) use 'step-only'
+   * and wrap N calls inside their own outer frame.
+   */
+  outer?: 'full' | 'step-only';
+  /** Unique id for the text part — important when emitting multiple steps so
+   *  text from different phases doesn't collide. Defaults to `t0`. */
+  textId?: string;
+  /** Same for reasoning. Defaults to `r0`. */
+  reasoningId?: string;
+};
+
 export async function* providerEventsToUIMS(
-  events: AsyncIterable<ProviderEvent>
+  events: AsyncIterable<ProviderEvent>,
+  framing: UimsFraming = {},
 ): AsyncIterable<string> {
+  const outer = framing.outer ?? 'full';
   const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const textId = `t0`;
-  const reasoningId = `r0`;
+  const textId = framing.textId ?? `t0`;
+  const reasoningId = framing.reasoningId ?? `r0`;
 
   function emit(chunk: Record<string, unknown>): string {
     return `data: ${JSON.stringify(chunk)}\n\n`;
   }
 
-  yield emit({ type: 'start', messageId });
+  if (outer === 'full') yield emit({ type: 'start', messageId });
   yield emit({ type: 'start-step' });
 
   // Lazy-open text/reasoning brackets — only emit `*-start` once we
@@ -122,8 +138,10 @@ export async function* providerEventsToUIMS(
           console.error('[uims-stream] provider error:', event.message);
           yield emit({ type: 'error', errorText: event.message });
           yield emit({ type: 'finish-step' });
-          yield emit({ type: 'finish', finishReason: 'error' });
-          yield 'data: [DONE]\n\n';
+          if (outer === 'full') {
+            yield emit({ type: 'finish', finishReason: 'error' });
+            yield 'data: [DONE]\n\n';
+          }
           return;
 
         case 'done':
@@ -135,7 +153,7 @@ export async function* providerEventsToUIMS(
     if (textOpen) yield emit({ type: 'text-end', id: textId });
     if (reasoningOpen) yield emit({ type: 'reasoning-end', id: reasoningId });
     yield emit({ type: 'finish-step' });
-    yield emit({ type: 'finish', finishReason: 'stop' });
+    if (outer === 'full') yield emit({ type: 'finish', finishReason: 'stop' });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[uims-stream] generator threw:', message);
@@ -143,8 +161,8 @@ export async function* providerEventsToUIMS(
     if (reasoningOpen) yield emit({ type: 'reasoning-end', id: reasoningId });
     yield emit({ type: 'error', errorText: message });
     yield emit({ type: 'finish-step' });
-    yield emit({ type: 'finish', finishReason: 'error' });
+    if (outer === 'full') yield emit({ type: 'finish', finishReason: 'error' });
   }
 
-  yield 'data: [DONE]\n\n';
+  if (outer === 'full') yield 'data: [DONE]\n\n';
 }

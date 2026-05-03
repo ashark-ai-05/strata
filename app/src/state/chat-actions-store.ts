@@ -12,9 +12,14 @@ import { create } from 'zustand';
 type ChatActions = {
   newChat: (() => void) | null;
   setNewChat: (fn: (() => void) | null) => void;
+  /** Triggered by /team — sends a prompt through the multi-agent route. */
+  sendTeam: ((prompt: string) => void) | null;
+  setSendTeam: (fn: ((prompt: string) => void) | null) => void;
 };
 
 export const useChatActions = create<ChatActions>((set) => ({
   newChat: null,
   setNewChat: (fn) => set({ newChat: fn }),
+  sendTeam: null,
+  setSendTeam: (fn) => set({ sendTeam: fn }),
 }));

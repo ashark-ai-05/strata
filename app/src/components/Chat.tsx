@@ -68,6 +68,39 @@ function truncate(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
 
+/**
+ * Fire-and-forget POST to /v1/index-conversation. Strata's compounding-
+ * value mechanic — every assistant turn becomes searchable for future
+ * search_kb calls. Toasts the indexed chunk count on success so the user
+ * sees the KB literally growing as they use the product.
+ */
+async function indexConversation(
+  conversationId: string,
+  messages: ReadonlyArray<{
+    id: string;
+    role: string;
+    parts: ReadonlyArray<{ type: string; text?: string }>;
+  }>,
+): Promise<void> {
+  try {
+    const res = await fetch('/v1/index-conversation', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ conversationId, messages }),
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as { indexed?: number };
+    if (data.indexed && data.indexed > 0) {
+      toast(`KB grew · ${data.indexed} new ${data.indexed === 1 ? 'turn' : 'turns'} indexed`, {
+        duration: 2400,
+      });
+    }
+  } catch (e) {
+    // Best-effort; don't bother the user with toasts on failure.
+    console.warn('[chat] index-conversation failed:', e);
+  }
+}
+
 function parseToolOutput(
   output: unknown,
 ): { directive: ToolDirective } | null {
@@ -106,6 +139,18 @@ export function Chat() {
     transport: new DefaultChatTransport({
       api: '/v1/chat',
       body: () => ({ canvasSnapshot: getLatestSnapshot() }),
+      // Per-call URL override: the /team slash command sets metadata.route='team'
+      // and we redirect to /v1/team. Default routing stays on /v1/chat.
+      prepareSendMessagesRequest: ({ messages: msgs, requestMetadata, body, headers, credentials }) => {
+        const meta = requestMetadata as { route?: string } | undefined;
+        const api = meta?.route === 'team' ? '/v1/team' : '/v1/chat';
+        return {
+          api,
+          body: { ...body, messages: msgs },
+          headers,
+          credentials,
+        };
+      },
     }),
   });
   const [input, setInput] = useState('');
@@ -207,6 +252,31 @@ export function Chat() {
     });
     return () => setNewChat(null);
   }, [setNewChat]);
+
+  // /team — multi-agent orchestration. Same useChat instance, but the
+  // request metadata routes the call to /v1/team (see transport above).
+  const setSendTeam = useChatActions((s) => s.setSendTeam);
+  useEffect(() => {
+    setSendTeam((text: string) => {
+      sendMessage({ text }, { metadata: { route: 'team' } });
+    });
+    return () => setSendTeam(null);
+  }, [setSendTeam, sendMessage]);
+
+  // Self-improving KB: when a turn finishes (status returns to 'ready'
+  // after streaming) and the last message is from the assistant, index
+  // the conversation back into the SQLite store. Search_kb naturally
+  // surfaces these chunks alongside indexed docs/code in future turns.
+  const lastIndexedRef = useRef(0);
+  useEffect(() => {
+    if (status !== 'ready') return;
+    if (messages.length <= lastIndexedRef.current) return;
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'assistant') return;
+    lastIndexedRef.current = messages.length;
+    void indexConversation(activeId, messages);
+  }, [status, messages, activeId]);
 
   return (
     <div className="flex h-full flex-col relative">

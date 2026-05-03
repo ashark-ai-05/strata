@@ -24,6 +24,25 @@ const TEMPLATE_IDS = Object.keys(TEMPLATES_BY_ID) as CanvasTemplate['id'][];
 
 export const COMMANDS: SlashCommand[] = [
   {
+    name: 'team',
+    args: '<prompt>',
+    description: 'Run a 3-agent team (Researcher → Builder → Critic) on a prompt.',
+    run: (args) => {
+      const text = args.join(' ').trim();
+      if (!text) {
+        toast.error('Usage: /team <your prompt>');
+        return true;
+      }
+      const sendTeam = useChatActions.getState().sendTeam;
+      if (!sendTeam) {
+        toast.error('Chat not ready');
+        return true;
+      }
+      sendTeam(text);
+      return true;
+    },
+  },
+  {
     name: 'clear',
     description: 'Clear chat + canvas (same as the New button).',
     run: () => {

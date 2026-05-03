@@ -6,6 +6,8 @@ import { healthRoute } from './routes/health.js';
 import { queryOpenAIRoute } from './routes/query-openai.js';
 import { chatRoute } from './routes/chat.js';
 import { searchRoute } from './routes/search.js';
+import { indexConversationRoute } from './routes/index-conversation.js';
+import { teamRoute } from './routes/team.js';
 
 /**
  * The Hono app. Tests can hit `app.request(path)` directly without
@@ -200,6 +202,32 @@ app.post('/v1/query', async (c) => {
   lazyApp.post('/v1/search', async (c) => {
     const state = await getState();
     const sub = searchRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  app.route('/', lazyApp);
+}
+
+// Self-improving KB — POST /v1/index-conversation chunks + embeds chat
+// turns into the same SQLite store as docs/code, so search_kb surfaces
+// prior conversations alongside indexed content.
+{
+  const lazyApp = new Hono();
+  lazyApp.post('/v1/index-conversation', async (c) => {
+    const state = await getState();
+    const sub = indexConversationRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  app.route('/', lazyApp);
+}
+
+// Multi-agent team — POST /v1/team runs Researcher → Builder → Critic
+// sequentially over a single user prompt, streaming all phases as one
+// useChat-compatible UIMS message.
+{
+  const lazyApp = new Hono();
+  lazyApp.post('/v1/team', async (c) => {
+    const state = await getState();
+    const sub = teamRoute(state);
     return sub.fetch(c.req.raw);
   });
   app.route('/', lazyApp);
