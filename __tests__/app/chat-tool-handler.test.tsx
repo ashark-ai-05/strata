@@ -190,3 +190,80 @@ describe('Chat tool handler', () => {
     expect(applyMock).not.toHaveBeenCalled();
   });
 });
+
+describe('Chat tool indicators', () => {
+  it('renders "calling <toolName>…" for tool-input-available parts', () => {
+    messagesRef.current = [
+      {
+        id: 'm-call',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-input-available',
+            toolCallId: 'tc-call',
+            toolName: 'search_kb',
+            input: { query: 'auth' },
+          },
+        ],
+      },
+    ];
+    const { getByText } = render(<Chat />);
+    expect(getByText(/calling search_kb/i)).toBeDefined();
+  });
+
+  it('renders "tool error: <errorText>" for tool-output-error parts', () => {
+    messagesRef.current = [
+      {
+        id: 'm-err',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-output-error',
+            toolCallId: 'tc-err',
+            errorText: 'Invalid payload for kind=markdown',
+          },
+        ],
+      },
+    ];
+    const { getByText } = render(<Chat />);
+    expect(getByText(/tool error: Invalid payload for kind=markdown/)).toBeDefined();
+  });
+
+  it('renders no visible indicator for tool-output-available (directive applied silently)', () => {
+    messagesRef.current = [
+      {
+        id: 'm-out',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-output-available',
+            toolCallId: 'tc-out',
+            output: { directive: { type: 'place', id: 'w', kind: 'markdown', role: 'primary', payload: {} } },
+          },
+        ],
+      },
+    ];
+    const { container } = render(<Chat />);
+    // Message wrapper exists but no "calling" or "tool error" text
+    expect(container.textContent).not.toMatch(/calling/i);
+    expect(container.textContent).not.toMatch(/tool error/i);
+  });
+
+  it('still renders text parts alongside indicators', () => {
+    messagesRef.current = [
+      {
+        id: 'm-mixed',
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Looking that up.' },
+          { type: 'tool-input-available', toolCallId: 'tc-x', toolName: 'fetch_result', input: { id: 'x' } },
+          { type: 'text', text: ' Here it is.' },
+        ],
+      },
+    ];
+    const { getByText } = render(<Chat />);
+    expect(getByText(/Looking that up\./)).toBeDefined();
+    expect(getByText(/calling fetch_result/i)).toBeDefined();
+    expect(getByText(/Here it is\./)).toBeDefined();
+  });
+});

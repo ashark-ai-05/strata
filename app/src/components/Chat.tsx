@@ -94,9 +94,29 @@ export function Chat() {
               {m.role}
             </div>
             <div className="whitespace-pre-wrap text-zinc-100">
-              {m.parts
-                .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                .map((p, i) => <span key={i}>{p.text}</span>)}
+              {(m.parts as Array<{ type: string }>).map((p, i) => {
+                if (p.type === 'text') {
+                  return <span key={i}>{(p as unknown as { text: string }).text}</span>;
+                }
+                if (p.type === 'tool-input-available') {
+                  const tc = p as unknown as { toolName: string };
+                  return (
+                    <span key={i} className="block text-xs text-zinc-500 italic">
+                      calling {tc.toolName}…
+                    </span>
+                  );
+                }
+                if (p.type === 'tool-output-error') {
+                  const er = p as unknown as { errorText: string };
+                  return (
+                    <span key={i} className="block text-xs text-red-400">
+                      tool error: {er.errorText}
+                    </span>
+                  );
+                }
+                // tool-output-available: directive already applied in the useEffect — render nothing.
+                return null;
+              })}
             </div>
           </div>
         ))}
