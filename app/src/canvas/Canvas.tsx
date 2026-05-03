@@ -13,6 +13,7 @@ import {
 } from './persistence';
 import { computeCanvasSnapshot } from './snapshot';
 import { setLatestSnapshot } from '../state/snapshot-ref';
+import { setEditor } from '../state/editor-ref';
 import { useTemplateStore } from '../state/template-store';
 import { DebugToolbar } from '../components/DebugToolbar';
 import { SearchBar } from '../components/SearchBar';
@@ -40,6 +41,10 @@ export function Canvas() {
 
   const handleMount = useCallback(
     (editor: Editor) => {
+      // Register the editor in a singleton so Chat (rendered outside the
+      // Tldraw editor scope) can apply tool directives via getEditor().
+      setEditor(editor);
+
       editor.store.listen(
         () => {
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);

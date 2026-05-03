@@ -1,8 +1,41 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Send } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { applyToolDirective } from '../canvas/dispatcher';
 import { getLatestSnapshot } from '../state/snapshot-ref';
+import { getEditor } from '../state/editor-ref';
+import { useTemplateStore } from '../state/template-store';
+import type { ToolDirective } from '../../../src/agent/types';
+
+type ToolOutputPart = {
+  type: 'tool-output-available';
+  toolCallId: string;
+  output: unknown;
+};
+
+function parseToolOutput(
+  output: unknown,
+): { directive: ToolDirective } | null {
+  let value: unknown = output;
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'directive' in value &&
+    typeof (value as { directive?: unknown }).directive === 'object' &&
+    (value as { directive?: unknown }).directive !== null
+  ) {
+    return value as { directive: ToolDirective };
+  }
+  return null;
+}
 
 export function Chat() {
   const { messages, sendMessage, status } = useChat({
@@ -13,6 +46,31 @@ export function Chat() {
   });
   const [input, setInput] = useState('');
   const isStreaming = status === 'streaming';
+  const appliedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const editor = getEditor();
+    if (!editor) return;
+    for (const m of messages) {
+      for (const p of m.parts as Array<{ type: string }>) {
+        if (p.type !== 'tool-output-available') continue;
+        const op = p as ToolOutputPart;
+        if (appliedRef.current.has(op.toolCallId)) continue;
+        const parsed = parseToolOutput(op.output);
+        if (!parsed?.directive) {
+          appliedRef.current.add(op.toolCallId);
+          continue;
+        }
+        const tplId = useTemplateStore.getState().activeTemplateId;
+        try {
+          applyToolDirective(editor, parsed.directive, tplId);
+        } catch (e) {
+          console.error('[chat] applyToolDirective failed:', e);
+        }
+        appliedRef.current.add(op.toolCallId);
+      }
+    }
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
