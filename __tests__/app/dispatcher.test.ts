@@ -33,7 +33,7 @@ describe('placeResultsOnCanvas', () => {
       },
     ]);
     const call = editor.createShape.mock.calls[0][0];
-    expect(call.type).toBe('llm-wiki:markdown');
+    expect(call.type).toBe('strata:markdown');
     expect(call.props.title).toBe('A');
     expect(call.props.body).toBe('B');
   });
@@ -48,7 +48,7 @@ describe('placeResultsOnCanvas', () => {
       },
     ]);
     const call = editor.createShape.mock.calls[0][0];
-    expect(call.type).toBe('llm-wiki:code-block');
+    expect(call.type).toBe('strata:code-block');
     expect(call.props.symbolName).toBe('foo');
     expect(call.props.filePath).toBe('a.ts');
     expect(call.props.language).toBe('typescript');
@@ -64,6 +64,6 @@ describe('placeResultsOnCanvas', () => {
       },
     ]);
     const call = editor.createShape.mock.calls[0][0];
-    expect(call.type).toBe('llm-wiki:key-value-card');
+    expect(call.type).toBe('strata:key-value-card');
   });
 });

@@ -6,11 +6,11 @@ import type {
 } from '../../../src/agent/types';
 
 const SHAPE_TO_KIND: Record<string, WidgetKind> = {
-  'llm-wiki:markdown': 'markdown',
-  'llm-wiki:code-block': 'code-block',
-  'llm-wiki:ticket': 'ticket',
-  'llm-wiki:web-embed': 'web-embed',
-  'llm-wiki:key-value-card': 'key-value-card',
+  'strata:markdown': 'markdown',
+  'strata:code-block': 'code-block',
+  'strata:ticket': 'ticket',
+  'strata:web-embed': 'web-embed',
+  'strata:key-value-card': 'key-value-card',
 };
 
 export type CanvasSnapshotShape = {
@@ -25,7 +25,7 @@ export type CanvasSnapshotShape = {
 };
 
 /**
- * Walk page shapes, keep only llm-wiki:* widgets, return the snapshot
+ * Walk page shapes, keep only strata:* widgets, return the snapshot
  * the backend expects. Cheap; called per chat submit.
  */
 export function computeCanvasSnapshot(

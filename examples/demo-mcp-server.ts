@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Demo MCP server for testing llm-wiki integration.
+ * Demo MCP server for testing strata integration.
  *
  * Exposes a fake "company knowledge base" with five wiki pages and five
  * tickets. Cross-references between them are intentional — pages
@@ -18,8 +18,8 @@
  *
  * Transport: stdio.
  *
- * To use with llm-wiki:
- *   1. Add to ~/.llm-wiki/config.json under profiles[].sources:
+ * To use with strata:
+ *   1. Add to ~/.strata/config.json under profiles[].sources:
  *
  *      {
  *        "id": "demo-kb",

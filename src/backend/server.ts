@@ -209,10 +209,10 @@ export async function start(port: number): Promise<void> {
   const { serve } = await import('@hono/node-server');
   const s = await getState();
   serve({ fetch: app.fetch, port });
-  console.log(`[llm-wiki backend] listening on http://127.0.0.1:${port}`);
-  console.log(`[llm-wiki backend] profile: ${s.profileName}`);
-  console.log(`[llm-wiki backend] llm:     ${s.getLLMProvider().id}`);
-  console.log(`[llm-wiki backend] embed:   ${s.getEmbedder().id}`);
+  console.log(`[strata backend] listening on http://127.0.0.1:${port}`);
+  console.log(`[strata backend] profile: ${s.profileName}`);
+  console.log(`[strata backend] llm:     ${s.getLLMProvider().id}`);
+  console.log(`[strata backend] embed:   ${s.getEmbedder().id}`);
 }
 
 // Run via `pnpm tsx src/backend/server.ts` or `pnpm backend`.
@@ -223,9 +223,9 @@ const isMainModule =
   process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  const port = Number(process.env['LLM_WIKI_BACKEND_PORT'] ?? 3457);
+  const port = Number(process.env['STRATA_BACKEND_PORT'] ?? 3457);
   start(port).catch((e) => {
-    console.error('[llm-wiki backend] fatal:', e);
+    console.error('[strata backend] fatal:', e);
     process.exit(1);
   });
 }

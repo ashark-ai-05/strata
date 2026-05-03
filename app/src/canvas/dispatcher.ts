@@ -30,11 +30,11 @@ export function placeResultsOnCanvas(
 }
 
 const KIND_TO_SHAPE: Record<WidgetKind, string> = {
-  markdown: 'llm-wiki:markdown',
-  'code-block': 'llm-wiki:code-block',
-  ticket: 'llm-wiki:ticket',
-  'web-embed': 'llm-wiki:web-embed',
-  'key-value-card': 'llm-wiki:key-value-card',
+  markdown: 'strata:markdown',
+  'code-block': 'strata:code-block',
+  ticket: 'strata:ticket',
+  'web-embed': 'strata:web-embed',
+  'key-value-card': 'strata:key-value-card',
 };
 
 /**
@@ -70,7 +70,7 @@ export function applyToolDirective(
     case 'clear': {
       const ids = editor
         .getCurrentPageShapes()
-        .filter((s) => s.type.startsWith('llm-wiki:'))
+        .filter((s) => s.type.startsWith('strata:'))
         .map((s) => s.id);
       if (ids.length > 0) editor.deleteShapes(ids as never[]);
       return;
@@ -141,6 +141,6 @@ function countByRole(editor: Editor, role: string): number {
   }>;
   return shapes.filter(
     (s) =>
-      s.type.startsWith('llm-wiki:') && (s.meta?.['role'] as string) === role,
+      s.type.startsWith('strata:') && (s.meta?.['role'] as string) === role,
   ).length;
 }

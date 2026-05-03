@@ -32,7 +32,7 @@ export type ClaudeAgentSdkDeps = {
   search?: AgentToolDeps['search'];
 };
 
-const DEFAULT_SYSTEM_PROMPT = `You are llm-wiki, a knowledge assistant. The user has a canvas where you can place widgets to visualize answers spatially.
+const DEFAULT_SYSTEM_PROMPT = `You are Strata, a knowledge assistant. The user has a canvas where you can place widgets to visualize answers spatially.
 
 Use tools when visual presentation aids the answer (lookups across sources, multi-item synthesis, walkthroughs). Reply with text only for chitchat, clarifications, follow-ups about content already on the canvas, or simple factual questions.
 
@@ -87,7 +87,7 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
     const { mkdtempSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const cleanCwd = mkdtempSync(join(tmpdir(), 'llm-wiki-sdk-'));
+    const cleanCwd = mkdtempSync(join(tmpdir(), 'strata-sdk-'));
 
     // Mirror the caller's abort signal into a fresh AbortController owned by
     // this turn. The SDK accepts an `abortController` (not a signal) so we
@@ -115,7 +115,7 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
     const tools = buildAgentTools({ search, getSnapshot: () => snapshot });
 
     const mcp = createSdkMcpServer({
-      name: 'llm-wiki-tools',
+      name: 'strata-tools',
       version: '0.1.0',
       // Each tool factory returns a `WithArgs<...>` cast (handlers accept the
       // public, optional-friendly args type). createSdkMcpServer's parameter
@@ -138,9 +138,9 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
       // No custom agents.
       agents: {},
       // In-process MCP server hosting our 9 agent tools. The SDK invokes
-      // them by `mcp__<server>__<tool>` — we name the server `llm-wiki`.
-      mcpServers: { 'llm-wiki': mcp },
-      allowedTools: tools.map((t) => `mcp__llm-wiki__${t.name}`),
+      // them by `mcp__<server>__<tool>` — we name the server `strata`.
+      mcpServers: { 'strata': mcp },
+      allowedTools: tools.map((t) => `mcp__strata__${t.name}`),
       maxTurns: 10,
       maxOutputTokens: 8192,
       effort: 'medium',

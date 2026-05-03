@@ -139,8 +139,8 @@ describe('chunks + embeddings smoke', () => {
 });
 
 describe('openDefaultStore', () => {
-  it('opens an in-memory store when LLM_WIKI_STORE_PATH=:memory:', async () => {
-    process.env['LLM_WIKI_STORE_PATH'] = ':memory:';
+  it('opens an in-memory store when STRATA_STORE_PATH=:memory:', async () => {
+    process.env['STRATA_STORE_PATH'] = ':memory:';
     try {
       const store = await openDefaultStore();
       // Migrations are applied; chunks table should exist.
@@ -150,7 +150,7 @@ describe('openDefaultStore', () => {
       expect(tables.some((t) => t.name === 'chunks')).toBe(true);
       store.close();
     } finally {
-      delete process.env['LLM_WIKI_STORE_PATH'];
+      delete process.env['STRATA_STORE_PATH'];
     }
   });
 });

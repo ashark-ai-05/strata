@@ -13,11 +13,11 @@ export function shapeProps(
   const base: Record<string, unknown> = { ...result.shape, uri: result.provenance.uri };
 
   switch (shapeType) {
-    case 'llm-wiki:markdown':
+    case 'strata:markdown':
       return { w: size.w, h: size.h, ...base };
-    case 'llm-wiki:code-block':
+    case 'strata:code-block':
       return { w: size.w, h: size.h, ...base };
-    case 'llm-wiki:ticket':
+    case 'strata:ticket':
       return {
         w: size.w,
         h: size.h,
@@ -25,9 +25,9 @@ export function shapeProps(
         title: (result.shape as { title?: string }).title ?? 'Untitled',
         ...base,
       };
-    case 'llm-wiki:web-embed':
+    case 'strata:web-embed':
       return { w: size.w, h: size.h, url: (result.shape as { url?: string }).url ?? '', ...base };
-    case 'llm-wiki:key-value-card':
+    case 'strata:key-value-card':
     default:
       return {
         w: size.w,
@@ -40,9 +40,9 @@ export function shapeProps(
 }
 
 export const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  'llm-wiki:markdown':       { w: 360, h: 240 },
-  'llm-wiki:code-block':     { w: 480, h: 280 },
-  'llm-wiki:ticket':         { w: 320, h: 200 },
-  'llm-wiki:web-embed':      { w: 480, h: 320 },
-  'llm-wiki:key-value-card': { w: 320, h: 200 },
+  'strata:markdown':       { w: 360, h: 240 },
+  'strata:code-block':     { w: 480, h: 280 },
+  'strata:ticket':         { w: 320, h: 200 },
+  'strata:web-embed':      { w: 480, h: 320 },
+  'strata:key-value-card': { w: 320, h: 200 },
 };

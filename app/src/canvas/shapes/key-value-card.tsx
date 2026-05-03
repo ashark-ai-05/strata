@@ -11,7 +11,7 @@ import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
 type KeyValuePair = { key: string; value: string };
 
 export type KeyValueCardShape = TLBaseShape<
-  'llm-wiki:key-value-card',
+  'strata:key-value-card',
   {
     w: number;
     h: number;
@@ -22,7 +22,7 @@ export type KeyValueCardShape = TLBaseShape<
 >;
 
 export class KeyValueCardShapeUtil extends ShapeUtil<KeyValueCardShape> {
-  static override type = 'llm-wiki:key-value-card' as const;
+  static override type = 'strata:key-value-card' as const;
 
   static override props: RecordProps<KeyValueCardShape> = {
     w: T.number,

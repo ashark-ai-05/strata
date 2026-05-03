@@ -9,7 +9,7 @@ import {
 import { cardFrame, cardHeader, CardTitle, monoBody, tag } from './shared';
 
 export type CodeBlockShape = TLBaseShape<
-  'llm-wiki:code-block',
+  'strata:code-block',
   {
     w: number;
     h: number;
@@ -22,7 +22,7 @@ export type CodeBlockShape = TLBaseShape<
 >;
 
 export class CodeBlockShapeUtil extends ShapeUtil<CodeBlockShape> {
-  static override type = 'llm-wiki:code-block' as const;
+  static override type = 'strata:code-block' as const;
 
   static override props: RecordProps<CodeBlockShape> = {
     w: T.number,

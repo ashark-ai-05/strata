@@ -4,7 +4,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { SourceConfig } from '../config/schema.js';
 
-const CLIENT_NAME = 'llm-wiki';
+const CLIENT_NAME = 'strata';
 const CLIENT_VERSION = '0.1.0';
 
 /**

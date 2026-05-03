@@ -1,6 +1,6 @@
 import type { ProviderEvent } from '../core/provider.js';
 
-const MODEL_LABEL = 'llm-wiki';
+const MODEL_LABEL = 'strata';
 
 /**
  * Convert our ProviderEvent stream into OpenAI chat-completions SSE

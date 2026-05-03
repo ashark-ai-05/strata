@@ -77,7 +77,7 @@ describe('claude-agent-sdk options', () => {
     expect((opts.abortController as AbortController).signal.aborted).toBe(true);
   });
 
-  it('wires the 9 agent tools as MCP server with allowedTools mcp__llm-wiki__*', async () => {
+  it('wires the 9 agent tools as MCP server with allowedTools mcp__strata__*', async () => {
     const adapter = new ClaudeAgentSdkAdapter();
     for await (const _ of adapter.query({
       prompt: 'hi',
@@ -90,13 +90,13 @@ describe('claude-agent-sdk options', () => {
     ).options;
     const allowed = opts.allowedTools as string[];
     expect(allowed.length).toBe(9);
-    expect(allowed.every((t) => t.startsWith('mcp__llm-wiki__'))).toBe(true);
+    expect(allowed.every((t) => t.startsWith('mcp__strata__'))).toBe(true);
     // Sanity: known tool names appear
-    expect(allowed).toContain('mcp__llm-wiki__search_kb');
-    expect(allowed).toContain('mcp__llm-wiki__place_widget');
+    expect(allowed).toContain('mcp__strata__search_kb');
+    expect(allowed).toContain('mcp__strata__place_widget');
     expect(opts.mcpServers).toBeDefined();
     expect(
-      (opts.mcpServers as Record<string, unknown>)['llm-wiki'],
+      (opts.mcpServers as Record<string, unknown>)['strata'],
     ).toBeDefined();
   });
 

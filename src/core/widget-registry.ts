@@ -4,22 +4,22 @@ import type { Widget } from './widget.js';
 const MARKDOWN: Widget = {
   id: 'markdown',
   acceptsKinds: ['text-document', 'wiki-page'],
-  shapeType: 'llm-wiki:markdown',
+  shapeType: 'strata:markdown',
 };
 const CODE_BLOCK: Widget = {
   id: 'code-block',
   acceptsKinds: ['code-symbol', 'code-file'],
-  shapeType: 'llm-wiki:code-block',
+  shapeType: 'strata:code-block',
 };
 const TICKET: Widget = {
   id: 'ticket',
   acceptsKinds: ['ticket'],
-  shapeType: 'llm-wiki:ticket',
+  shapeType: 'strata:ticket',
 };
 const WEB_EMBED: Widget = {
   id: 'web-embed',
   acceptsKinds: ['web-page'],
-  shapeType: 'llm-wiki:web-embed',
+  shapeType: 'strata:web-embed',
 };
 const KEY_VALUE_CARD: Widget = {
   id: 'key-value-card',
@@ -36,7 +36,7 @@ const KEY_VALUE_CARD: Widget = {
     'k8s-resource',
     'code-diff',
   ],
-  shapeType: 'llm-wiki:key-value-card',
+  shapeType: 'strata:key-value-card',
 };
 
 /**

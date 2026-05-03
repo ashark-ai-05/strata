@@ -9,7 +9,7 @@ import {
 import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
 
 export type TicketCardShape = TLBaseShape<
-  'llm-wiki:ticket',
+  'strata:ticket',
   {
     w: number;
     h: number;
@@ -30,7 +30,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export class TicketCardShapeUtil extends ShapeUtil<TicketCardShape> {
-  static override type = 'llm-wiki:ticket' as const;
+  static override type = 'strata:ticket' as const;
 
   static override props: RecordProps<TicketCardShape> = {
     w: T.number,

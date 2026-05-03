@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm';
 import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
 
 export type MarkdownShape = TLBaseShape<
-  'llm-wiki:markdown',
+  'strata:markdown',
   {
     w: number;
     h: number;
@@ -22,7 +22,7 @@ export type MarkdownShape = TLBaseShape<
 >;
 
 export class MarkdownShapeUtil extends ShapeUtil<MarkdownShape> {
-  static override type = 'llm-wiki:markdown' as const;
+  static override type = 'strata:markdown' as const;
 
   static override props: RecordProps<MarkdownShape> = {
     w: T.number,
@@ -52,7 +52,7 @@ export class MarkdownShapeUtil extends ShapeUtil<MarkdownShape> {
           <span style={tag}>md</span>
         </div>
         <div style={cardBody}>
-          <div className="llm-wiki-markdown">
+          <div className="strata-markdown">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{shape.props.body}</ReactMarkdown>
           </div>
         </div>

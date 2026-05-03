@@ -1,5 +1,5 @@
 /**
- * llm-wiki CLI entry point.
+ * strata CLI entry point.
  *
  * Usage:
  *   pnpm cli --profile <name> "<prompt>"   # stream a response
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
     const { activeProfile } = loadConfig(profileOverride);
     if (activeProfile.sources.length === 0) {
       console.log('No sources configured for profile:', activeProfile.name);
-      console.log("Add sources to ~/.llm-wiki/config.json under profiles[].sources.");
+      console.log("Add sources to ~/.strata/config.json under profiles[].sources.");
       return;
     }
     console.log(`Sources for profile '${activeProfile.name}':`);
@@ -306,7 +306,7 @@ async function main(): Promise<void> {
     const { openStore, loadInitialMigrations } = await import('./storage/store.js');
     const { migrate } = await import('./storage/migrations.js');
 
-    const dir = join(homedir(), '.llm-wiki');
+    const dir = join(homedir(), '.strata');
     const path = join(dir, 'index.sqlite');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 

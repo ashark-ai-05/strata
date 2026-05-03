@@ -7,18 +7,18 @@ describe('Widget type contract', () => {
     const w: Widget = {
       id: 'test',
       acceptsKinds: ['text-document'] as ResultKind[],
-      shapeType: 'llm-wiki:test',
+      shapeType: 'strata:test',
     };
     expect(w.id).toBe('test');
     expect(w.acceptsKinds).toContain('text-document');
-    expect(w.shapeType).toBe('llm-wiki:test');
+    expect(w.shapeType).toBe('strata:test');
   });
 
   it('allows optional actions and refresh', () => {
     const w: Widget = {
       id: 'with-actions',
       acceptsKinds: ['ticket'],
-      shapeType: 'llm-wiki:ticket',
+      shapeType: 'strata:ticket',
       actions: [
         { id: 'open-source', label: 'Open in source' },
         { id: 'pin', label: 'Pin' },

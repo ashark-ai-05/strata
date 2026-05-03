@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CodeBlockShapeUtil } from '../../app/src/canvas/shapes/code-block';
 
 describe('CodeBlockShapeUtil', () => {
-  it('declares llm-wiki:code-block', () => {
-    expect(CodeBlockShapeUtil.type).toBe('llm-wiki:code-block');
+  it('declares strata:code-block', () => {
+    expect(CodeBlockShapeUtil.type).toBe('strata:code-block');
   });
 
   it('exposes language, symbolName, filePath, body in props', () => {

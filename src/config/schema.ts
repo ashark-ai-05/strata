@@ -1,8 +1,8 @@
 /**
- * Zod schemas for the llm-wiki config file.
+ * Zod schemas for the strata config file.
  *
- * Config lives at ~/.llm-wiki/config.json by default, or at the path
- * pointed to by the LLM_WIKI_CONFIG environment variable.
+ * Config lives at ~/.strata/config.json by default, or at the path
+ * pointed to by the STRATA_CONFIG environment variable.
  */
 import { z } from 'zod';
 

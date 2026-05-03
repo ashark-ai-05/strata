@@ -3,7 +3,7 @@ import { MarkdownShapeUtil } from '../../app/src/canvas/shapes/markdown';
 
 describe('MarkdownShapeUtil', () => {
   it('declares the namespaced shape type', () => {
-    expect(MarkdownShapeUtil.type).toBe('llm-wiki:markdown');
+    expect(MarkdownShapeUtil.type).toBe('strata:markdown');
   });
 
   it('declares the typed props schema', () => {

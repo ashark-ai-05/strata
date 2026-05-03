@@ -1,8 +1,8 @@
-# llm-wiki — LLM Provider Vertical Slice
+# Strata
 
-A config-driven LLM provider layer for the llm-wiki project. This slice proves the architecture end-to-end: a single config file selects which LLM provider to use, and you can swap providers without touching any code.
+A local desktop knowledge surface that queries any MCP-accessible source (code, Confluence, Jira, ELK, k8s, PDFs, web) and materializes answers as a canvas of cited, navigable widgets. Built on a Hono backend + native Vite + React + tldraw frontend; the agent loop is wired through `@anthropic-ai/claude-agent-sdk` with 9 tools that let the model autonomously search, place widgets, switch templates, and link results.
 
-For the full design intent, see [`docs/superpowers/specs/2026-05-02-llm-wiki-design.md`](docs/superpowers/specs/2026-05-02-llm-wiki-design.md) and its [amendments](docs/superpowers/specs/2026-05-02-llm-wiki-design-amendments.md).
+> Formerly **llm-wiki**. The historical design specs are in [`docs/superpowers/specs/`](docs/superpowers/specs/) — they reference the old name throughout.
 
 ---
 
@@ -25,12 +25,12 @@ pnpm install
 
 ## Configure
 
-The config lives at `~/.llm-wiki/config.json` by default. Running any CLI command will auto-create a starter config on first run.
+The config lives at `~/.strata/config.json` by default. Running any CLI command will auto-create a starter config on first run.
 
-Override the path via `$LLM_WIKI_CONFIG`:
+Override the path via `$STRATA_CONFIG`:
 
 ```bash
-LLM_WIKI_CONFIG=/path/to/my/config.json pnpm cli --list-profiles
+STRATA_CONFIG=/path/to/my/config.json pnpm cli --list-profiles
 ```
 
 ### Example config
@@ -142,13 +142,13 @@ This is the LLM provider vertical slice (Plan 1'). The full Plan 1 (Foundation) 
 - Agent loop (Plan 5): tool-calling wired into model-kind providers
 - Amp real wiring (post spike 01+02)
 
-See the [design spec](docs/superpowers/specs/2026-05-02-llm-wiki-design.md) for the full roadmap.
+See the [design spec](docs/superpowers/specs/2026-05-02-strata-design.md) for the full roadmap.
 
 ---
 
 ## Storage
 
-Local index lives at `~/.llm-wiki/index.sqlite` (single file, WAL mode, sqlite-vec extension loaded). Tables created from `src/storage/migrations/001_initial.sql` cover: `chunks`, `embeddings` (sqlite-vec), `fts` (FTS5), `symbols`, `links`, `prompt_cache`, `result_cache`, `sync_state`.
+Local index lives at `~/.strata/index.sqlite` (single file, WAL mode, sqlite-vec extension loaded). Tables created from `src/storage/migrations/001_initial.sql` cover: `chunks`, `embeddings` (sqlite-vec), `fts` (FTS5), `symbols`, `links`, `prompt_cache`, `result_cache`, `sync_state`.
 
 Inspect status:
 
@@ -164,7 +164,7 @@ The store is created on first invocation; subsequent runs reuse it.
 
 Default: bundled ONNX (`bge-small-en-v1.5`, 384-dim). First run downloads ~130MB to the HuggingFace cache (`~/.cache/huggingface/`); subsequent runs are offline.
 
-Available providers (set in `~/.llm-wiki/config.json` under `profiles[].embed`):
+Available providers (set in `~/.strata/config.json` under `profiles[].embed`):
 
 | Provider | Auth | Default model | Dims |
 | --- | --- | --- | --- |
@@ -228,7 +228,7 @@ Pre-Plan 5 the app shell was a vendored fork of [agent0ai/space-agent](https://g
 
 ## MCP Sources
 
-Configure MCP servers in `~/.llm-wiki/config.json` under `profiles[].sources`. Three transports are supported: `stdio` (subprocess), `sse` (Server-Sent Events), and `http` (Streamable HTTP).
+Configure MCP servers in `~/.strata/config.json` under `profiles[].sources`. Three transports are supported: `stdio` (subprocess), `sse` (Server-Sent Events), and `http` (Streamable HTTP).
 
 ### Example: filesystem MCP
 
@@ -284,7 +284,7 @@ The backend exposes the LLM provider, embedder, MCP source registry, search, and
 
 ### Ports and env
 
-- Default port: `3457`. Override with `LLM_WIKI_BACKEND_PORT=3460 pnpm backend` (don't collide with Vite on `3458`).
+- Default port: `3457`. Override with `STRATA_BACKEND_PORT=3460 pnpm backend` (don't collide with Vite on `3458`).
 
 ### Smoke check
 
@@ -324,7 +324,7 @@ curl -N http://127.0.0.1:3457/v1/query \
 
 ## Indexing and search
 
-`pnpm cli --index <path>` walks a directory recursively, chunks every `.md` / `.markdown` / `.txt` file (paragraph-aware, ~500 char target with 50 char overlap), embeds each chunk via the active profile's embedder, and stores everything in `~/.llm-wiki/index.sqlite` (Plan 1's schema).
+`pnpm cli --index <path>` walks a directory recursively, chunks every `.md` / `.markdown` / `.txt` file (paragraph-aware, ~500 char target with 50 char overlap), embeds each chunk via the active profile's embedder, and stores everything in `~/.strata/index.sqlite` (Plan 1's schema).
 
 `pnpm cli --search "<query>"` runs a hybrid search: FTS5 BM25 + sqlite-vec cosine, merged via reciprocal rank fusion (RRF, k=60). Returns the top 10 chunks with body snippets and source URIs.
 
@@ -424,12 +424,12 @@ The app's component tests use `@testing-library/react` + `jsdom`. Existing Node-
 
 ### Canvas (Plan 4b)
 
-The main view splits into an infinite canvas (top) and the chat panel (bottom). Canvas state auto-saves to `localStorage['llm-wiki:canvas:default']` on every change (500ms debounce). Refreshing the page restores the canvas.
+The main view splits into an infinite canvas (top) and the chat panel (bottom). Canvas state auto-saves to `localStorage['strata:canvas:default']` on every change (500ms debounce). Refreshing the page restores the canvas.
 
 To clear the canvas: open DevTools console and run
 
 ```js
-localStorage.removeItem('llm-wiki:canvas:default')
+localStorage.removeItem('strata:canvas:default')
 ```
 
 then reload.
@@ -444,7 +444,7 @@ Adding a new widget:
 2. Add it to the `customShapeUtils` array in `app/src/canvas/Canvas.tsx`
 3. (Plan 4d) Map a `ResultKind` to its shape type in the dispatcher
 
-The TextNoteShape (`llm-wiki:text-note`) is the proof-of-wire example — Plan 4c replaces it with a real widget catalog.
+The TextNoteShape (`strata:text-note`) is the proof-of-wire example — Plan 4c replaces it with a real widget catalog.
 
 ### Widget catalog (Plan 4c)
 
@@ -452,11 +452,11 @@ Five built-in widgets ship in v1, mirroring spec §3:
 
 | Shape type | ResultKind(s) accepted | Renders |
 | --- | --- | --- |
-| `llm-wiki:markdown` | `text-document`, `wiki-page` | GFM markdown via react-markdown |
-| `llm-wiki:code-block` | `code-symbol`, `code-file` | Monospace block with file/symbol metadata (no syntax highlighting in v1) |
-| `llm-wiki:ticket` | `ticket` | Jira-style card: id + title + status pill + assignee + description |
-| `llm-wiki:web-embed` | `web-page` | Sandboxed iframe (`sandbox="allow-scripts"`, no same-origin) |
-| `llm-wiki:key-value-card` | (fallback for unmapped kinds) | Title + key/value pairs |
+| `strata:markdown` | `text-document`, `wiki-page` | GFM markdown via react-markdown |
+| `strata:code-block` | `code-symbol`, `code-file` | Monospace block with file/symbol metadata (no syntax highlighting in v1) |
+| `strata:ticket` | `ticket` | Jira-style card: id + title + status pill + assignee + description |
+| `strata:web-embed` | `web-page` | Sandboxed iframe (`sandbox="allow-scripts"`, no same-origin) |
+| `strata:key-value-card` | (fallback for unmapped kinds) | Title + key/value pairs |
 
 The registry at `src/core/widget-registry.ts` maps every `ResultKind` from spec §3 to a widget. Unmapped kinds fall back to `KeyValueCardWidget`.
 

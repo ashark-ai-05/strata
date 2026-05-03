@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { TicketCardShapeUtil } from '../../app/src/canvas/shapes/ticket-card';
 
 describe('TicketCardShapeUtil', () => {
-  it('declares llm-wiki:ticket', () => {
-    expect(TicketCardShapeUtil.type).toBe('llm-wiki:ticket');
+  it('declares strata:ticket', () => {
+    expect(TicketCardShapeUtil.type).toBe('strata:ticket');
   });
 
   it('requires ticketId and title', () => {

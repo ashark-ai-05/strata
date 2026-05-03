@@ -9,7 +9,7 @@ import {
 import { cardFrame, cardHeader, CardTitle, tag } from './shared';
 
 export type WebEmbedShape = TLBaseShape<
-  'llm-wiki:web-embed',
+  'strata:web-embed',
   {
     w: number;
     h: number;
@@ -19,7 +19,7 @@ export type WebEmbedShape = TLBaseShape<
 >;
 
 export class WebEmbedShapeUtil extends ShapeUtil<WebEmbedShape> {
-  static override type = 'llm-wiki:web-embed' as const;
+  static override type = 'strata:web-embed' as const;
 
   static override props: RecordProps<WebEmbedShape> = {
     w: T.number,

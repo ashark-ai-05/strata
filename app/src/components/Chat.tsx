@@ -84,7 +84,7 @@ export function Chat() {
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-zinc-500 mt-12">
-            <p className="text-lg">llm-wiki</p>
+            <p className="text-lg">strata</p>
             <p className="text-sm">Type a message to start.</p>
           </div>
         )}

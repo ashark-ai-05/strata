@@ -46,7 +46,7 @@ export function DebugToolbar() {
     {
       label: 'Markdown',
       onClick: () =>
-        create('llm-wiki:markdown', {
+        create('strata:markdown', {
           w: 360,
           h: 240,
           title: 'Auth architecture',
@@ -57,7 +57,7 @@ export function DebugToolbar() {
     {
       label: 'Code',
       onClick: () =>
-        create('llm-wiki:code-block', {
+        create('strata:code-block', {
           w: 480,
           h: 280,
           language: 'typescript',
@@ -70,7 +70,7 @@ export function DebugToolbar() {
     {
       label: 'Ticket',
       onClick: () =>
-        create('llm-wiki:ticket', {
+        create('strata:ticket', {
           w: 320,
           h: 200,
           ticketId: 'TICKET-101',
@@ -84,7 +84,7 @@ export function DebugToolbar() {
     {
       label: 'Web embed',
       onClick: () =>
-        create('llm-wiki:web-embed', {
+        create('strata:web-embed', {
           w: 480,
           h: 360,
           url: 'https://example.com/',
@@ -94,7 +94,7 @@ export function DebugToolbar() {
     {
       label: 'Key/value',
       onClick: () =>
-        create('llm-wiki:key-value-card', {
+        create('strata:key-value-card', {
           w: 320,
           h: 200,
           title: 'k8s deployment',

@@ -3,7 +3,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-PORT="${LLM_WIKI_BACKEND_PORT:-3457}"
+PORT="${STRATA_BACKEND_PORT:-3457}"
 
 if [ "${1:-}" = "--smoke" ]; then
   echo "==> Booting backend on :$PORT (smoke)"

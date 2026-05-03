@@ -12,6 +12,6 @@ describe('Chat (smoke)', () => {
 
   it('shows the welcome message when there are no messages', () => {
     render(<Chat />);
-    expect(screen.getByText(/llm-wiki/)).toBeInTheDocument();
+    expect(screen.getByText(/strata/)).toBeInTheDocument();
   });
 });

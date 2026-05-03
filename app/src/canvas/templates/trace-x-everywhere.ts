@@ -26,7 +26,7 @@ const traceXEverywhereLayout: TemplateLayout = (results, viewport) => {
   // generic title "Subject"; Plan 4f or the agent loop replaces this when
   // the user supplies an explicit subject.
   placements.push({
-    shapeType: 'llm-wiki:key-value-card',
+    shapeType: 'strata:key-value-card',
     x: centreX - 160,
     y: centreY - 100,
     props: {

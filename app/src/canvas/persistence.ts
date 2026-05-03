@@ -1,6 +1,6 @@
 import type { TLEditorSnapshot } from 'tldraw';
 
-export const CANVAS_STORAGE_KEY = 'llm-wiki:canvas:default';
+export const CANVAS_STORAGE_KEY = 'strata:canvas:default';
 
 export function saveCanvasSnapshot(snapshot: TLEditorSnapshot): void {
   try {

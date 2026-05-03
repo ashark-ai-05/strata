@@ -8,7 +8,7 @@ import {
 import { T } from 'tldraw';
 
 export type TextNoteShape = TLBaseShape<
-  'llm-wiki:text-note',
+  'strata:text-note',
   {
     w: number;
     h: number;
@@ -17,7 +17,7 @@ export type TextNoteShape = TLBaseShape<
 >;
 
 export class TextNoteShapeUtil extends ShapeUtil<TextNoteShape> {
-  static override type = 'llm-wiki:text-note' as const;
+  static override type = 'strata:text-note' as const;
 
   static override props: RecordProps<TextNoteShape> = {
     w: T.number,
