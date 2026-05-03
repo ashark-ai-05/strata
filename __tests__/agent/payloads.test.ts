@@ -61,6 +61,20 @@ describe('payloads', () => {
         }).success,
       ).toBe(true);
     });
+    it('rejects missing ticketId', () => {
+      expect(
+        TicketPayload.safeParse({ title: 't', status: 'open' }).success,
+      ).toBe(false);
+    });
+    it('rejects non-string status', () => {
+      expect(
+        TicketPayload.safeParse({
+          ticketId: 'X-1',
+          title: 't',
+          status: 1,
+        }).success,
+      ).toBe(false);
+    });
   });
 
   describe('WebEmbedPayload', () => {
@@ -98,6 +112,11 @@ describe('payloads', () => {
           fields: [{ value: 'production' }],
         }).success,
       ).toBe(false);
+    });
+    it('accepts an empty fields array (intentional — empty card is valid)', () => {
+      expect(
+        KeyValueCardPayload.safeParse({ title: 'env', fields: [] }).success,
+      ).toBe(true);
     });
   });
 
