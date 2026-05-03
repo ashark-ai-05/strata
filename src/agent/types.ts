@@ -13,6 +13,12 @@ export const WIDGET_KINDS = [
 ] as const;
 export type WidgetKind = (typeof WIDGET_KINDS)[number];
 
+/**
+ * Logical placement role chosen by the model when calling place_widget.
+ * Each canvas template translates a role to pixel coordinates via
+ * `slotForRole` (see app/src/canvas/templates). `node` is the fallback
+ * for graph-shaped templates; `timeline` is the time-anchored slot.
+ */
 export const ROLES = [
   'primary',
   'detail',
@@ -36,17 +42,20 @@ export type TemplateId = (typeof TEMPLATE_IDS)[number];
  * The browser receives them via UIMS `tool-output-available` chunks and
  * applies them to tldraw via `applyToolDirective`.
  */
+// `id`/`linkId` on place/link directives are server-minted UUIDs. focus's
+// `id` references an existing canvas widget (id from a prior place); the
+// switchTemplate `id` is a TemplateId enum value.
 export type ToolDirective =
   | {
       type: 'place';
-      id: string;            // server-minted UUID
+      id: string;
       kind: WidgetKind;
       role: Role;
       payload: Record<string, unknown>;
     }
   | {
       type: 'link';
-      linkId: string;        // server-minted UUID for the edge
+      linkId: string;
       fromId: string;
       toId: string;
       label?: string;

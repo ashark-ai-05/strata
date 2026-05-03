@@ -37,25 +37,34 @@ describe('agent/types', () => {
     ]);
   });
 
-  it('ToolDirective is a discriminated union over `type`', () => {
-    const place: ToolDirective = {
-      type: 'place',
-      id: 'w-1',
-      kind: 'markdown',
-      role: 'primary',
-      payload: { title: 't', body: 'b' },
-    };
-    const link: ToolDirective = {
-      type: 'link',
-      linkId: 'l-1',
-      fromId: 'w-1',
-      toId: 'w-2',
-    };
-    const focus: ToolDirective = { type: 'focus', id: 'w-1' };
-    const clear: ToolDirective = { type: 'clear' };
-    const tmpl: ToolDirective = { type: 'switchTemplate', id: 'ask-anything' };
-
-    const all = [place, link, focus, clear, tmpl];
-    expect(all).toHaveLength(5);
+  it('ToolDirective discriminates on `type` — exhaustive switch must compile', () => {
+    // Compile-time check: a switch with all 5 variants narrows correctly to
+    // `never` in the default branch. If a variant is added or its discriminant
+    // changes, this stops compiling and the test breaks the build.
+    const directives: ToolDirective[] = [
+      { type: 'place', id: 'w-1', kind: 'markdown', role: 'primary',
+        payload: { title: 't', body: 'b' } },
+      { type: 'link', linkId: 'l-1', fromId: 'w-1', toId: 'w-2' },
+      { type: 'focus', id: 'w-1' },
+      { type: 'clear' },
+      { type: 'switchTemplate', id: 'ask-anything' },
+    ];
+    const seen = new Set<string>();
+    for (const d of directives) {
+      switch (d.type) {
+        case 'place': seen.add('place'); break;
+        case 'link': seen.add('link'); break;
+        case 'focus': seen.add('focus'); break;
+        case 'clear': seen.add('clear'); break;
+        case 'switchTemplate': seen.add('switchTemplate'); break;
+        default: {
+          // Exhaustiveness: `d` is `never` here. Build fails if a variant
+          // is added without a case branch.
+          const _exhaustive: never = d;
+          throw new Error(`unhandled directive: ${JSON.stringify(_exhaustive)}`);
+        }
+      }
+    }
+    expect(seen.size).toBe(5);
   });
 });
