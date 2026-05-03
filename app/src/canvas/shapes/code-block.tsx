@@ -6,7 +6,7 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw';
-import { cardFrame, cardHeader, CardTitle, monoBody, tag } from './shared';
+import { CardFrame, CardHeader, CardTitle, Tag } from './shared';
 
 export type CodeBlockShape = TLBaseShape<
   'strata:code-block',
@@ -53,18 +53,22 @@ export class CodeBlockShapeUtil extends ShapeUtil<CodeBlockShape> {
     const title = titleParts.join(' · ') || 'Code';
 
     return (
-      <HTMLContainer style={{ ...cardFrame, width: shape.props.w, height: shape.props.h }}>
-        <div style={cardHeader}>
-          <CardTitle>{title}</CardTitle>
-          {shape.props.language && <span style={tag}>{shape.props.language}</span>}
-        </div>
-        <pre style={{ ...monoBody, margin: 0 }}>{shape.props.body}</pre>
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <CardTitle>{title}</CardTitle>
+            {shape.props.language && <Tag>{shape.props.language}</Tag>}
+          </CardHeader>
+          <pre className="strata-card-body strata-card-body--mono" style={{ margin: 0 }}>
+            {shape.props.body}
+          </pre>
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: CodeBlockShape) {
-    return <rect width={shape.props.w} height={shape.props.h} rx={8} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {

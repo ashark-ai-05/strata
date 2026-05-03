@@ -6,7 +6,7 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw';
-import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
+import { CardBody, CardFrame, CardHeader, CardTitle } from './shared';
 
 export type TicketCardShape = TLBaseShape<
   'strata:ticket',
@@ -22,11 +22,11 @@ export type TicketCardShape = TLBaseShape<
   }
 >;
 
-const STATUS_COLOR: Record<string, string> = {
-  todo: '#71717a',
-  'in-progress': '#f59e0b',
-  done: '#22c55e',
-  blocked: '#ef4444',
+const STATUS_PALETTE: Record<string, { bg: string; fg: string; border: string }> = {
+  todo:           { bg: 'rgba(113,113,122,0.18)', fg: '#d4d4d8', border: 'rgba(113,113,122,0.4)' },
+  'in-progress':  { bg: 'rgba(245,158,11,0.18)',  fg: '#fde68a', border: 'rgba(245,158,11,0.5)' },
+  done:           { bg: 'rgba(16,185,129,0.18)',  fg: '#6ee7b7', border: 'rgba(16,185,129,0.5)' },
+  blocked:        { bg: 'rgba(239,68,68,0.18)',   fg: '#fca5a5', border: 'rgba(239,68,68,0.5)' },
 };
 
 export class TicketCardShapeUtil extends ShapeUtil<TicketCardShape> {
@@ -61,35 +61,49 @@ export class TicketCardShapeUtil extends ShapeUtil<TicketCardShape> {
   }
 
   override component(shape: TicketCardShape) {
-    const color = shape.props.status ? STATUS_COLOR[shape.props.status] ?? '#71717a' : '#71717a';
+    const status = shape.props.status;
+    const palette = status ? STATUS_PALETTE[status] : undefined;
     return (
-      <HTMLContainer style={{ ...cardFrame, width: shape.props.w, height: shape.props.h }}>
-        <div style={cardHeader}>
-          <span style={{ ...tag, fontFamily: 'ui-monospace, monospace' }}>{shape.props.ticketId}</span>
-          <CardTitle>{shape.props.title}</CardTitle>
-          {shape.props.status && (
-            <span style={{ ...tag, background: color, color: '#0a0a0a' }}>{shape.props.status}</span>
-          )}
-        </div>
-        <div style={cardBody}>
-          {shape.props.assignee && (
-            <div style={{ marginBottom: 8, color: '#a1a1aa' }}>
-              <span style={{ color: '#71717a' }}>assignee: </span>
-              {shape.props.assignee}
-            </div>
-          )}
-          {shape.props.description && (
-            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {shape.props.description}
-            </div>
-          )}
-        </div>
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <span className="strata-tag" style={{ fontFamily: 'ui-monospace, monospace' }}>
+              {shape.props.ticketId}
+            </span>
+            <CardTitle>{shape.props.title}</CardTitle>
+            {status && (
+              <span
+                className="strata-tag"
+                style={
+                  palette
+                    ? { background: palette.bg, color: palette.fg, borderColor: palette.border }
+                    : undefined
+                }
+              >
+                {status}
+              </span>
+            )}
+          </CardHeader>
+          <CardBody>
+            {shape.props.assignee && (
+              <div style={{ marginBottom: 8, color: '#a1a1aa' }}>
+                <span style={{ color: '#71717a' }}>assignee · </span>
+                {shape.props.assignee}
+              </div>
+            )}
+            {shape.props.description && (
+              <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {shape.props.description}
+              </div>
+            )}
+          </CardBody>
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: TicketCardShape) {
-    return <rect width={shape.props.w} height={shape.props.h} rx={8} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {

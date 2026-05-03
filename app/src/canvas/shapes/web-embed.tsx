@@ -6,7 +6,7 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw';
-import { cardFrame, cardHeader, CardTitle, tag } from './shared';
+import { CardFrame, CardHeader, CardTitle, Tag } from './shared';
 
 export type WebEmbedShape = TLBaseShape<
   'strata:web-embed',
@@ -15,6 +15,7 @@ export type WebEmbedShape = TLBaseShape<
     h: number;
     url: string;
     title?: string;
+    snippet?: string;
   }
 >;
 
@@ -26,6 +27,7 @@ export class WebEmbedShapeUtil extends ShapeUtil<WebEmbedShape> {
     h: T.number,
     url: T.string,
     title: T.optional(T.string),
+    snippet: T.optional(T.string),
   };
 
   override getDefaultProps(): WebEmbedShape['props'] {
@@ -47,34 +49,55 @@ export class WebEmbedShapeUtil extends ShapeUtil<WebEmbedShape> {
     } catch {
       host = shape.props.url;
     }
+    const showSnippet = !!shape.props.snippet && shape.props.snippet.length > 0;
     return (
-      <HTMLContainer style={{ ...cardFrame, width: shape.props.w, height: shape.props.h }}>
-        <div style={cardHeader}>
-          <CardTitle>{shape.props.title ?? host}</CardTitle>
-          <span style={tag}>web</span>
-        </div>
-        <iframe
-          src={shape.props.url}
-          // sandbox restricts the iframe; allow scripts + same-origin off so
-          // arbitrary web pages don't get our cookies. Add allow-popups
-          // selectively if a use case demands it later.
-          sandbox="allow-scripts"
-          referrerPolicy="no-referrer"
-          style={{
-            border: 'none',
-            width: '100%',
-            height: '100%',
-            background: '#0a0a0a',
-            flex: 1,
-          }}
-          title={shape.props.title ?? host}
-        />
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <CardTitle>{shape.props.title ?? host}</CardTitle>
+            <Tag>{host}</Tag>
+          </CardHeader>
+          {showSnippet ? (
+            <div className="strata-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: 0, color: '#d4d4d8' }}>{shape.props.snippet}</p>
+              <a
+                href={shape.props.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#c4b5fd',
+                  fontSize: 12,
+                  textDecoration: 'none',
+                  borderTop: '1px solid rgba(63,63,70,0.5)',
+                  paddingTop: 8,
+                  marginTop: 'auto',
+                }}
+              >
+                Open {host} ↗
+              </a>
+            </div>
+          ) : (
+            <iframe
+              src={shape.props.url}
+              sandbox="allow-scripts"
+              referrerPolicy="no-referrer"
+              style={{
+                border: 'none',
+                width: '100%',
+                height: '100%',
+                background: '#0a0a0a',
+                flex: 1,
+              }}
+              title={shape.props.title ?? host}
+            />
+          )}
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: WebEmbedShape) {
-    return <rect width={shape.props.w} height={shape.props.h} rx={8} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {

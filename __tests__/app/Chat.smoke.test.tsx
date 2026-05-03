@@ -12,6 +12,6 @@ describe('Chat (smoke)', () => {
 
   it('shows the welcome message when there are no messages', () => {
     render(<Chat />);
-    expect(screen.getByText(/strata/)).toBeInTheDocument();
+    expect(screen.getByText(/Ask anything about your knowledge/i)).toBeInTheDocument();
   });
 });

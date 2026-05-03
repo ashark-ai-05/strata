@@ -88,7 +88,7 @@ function shapeForKind(
   // Fallback — KeyValueCard renders these.
   return {
     title: titleFromUri(uri),
-    pairs: [
+    fields: [
       { key: 'kind', value: kind },
       { key: 'uri', value: uri },
       { key: 'body', value: body.slice(0, 200) + (body.length > 200 ? '…' : '') },

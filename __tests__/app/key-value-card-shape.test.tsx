@@ -6,7 +6,7 @@ describe('KeyValueCardShapeUtil', () => {
     expect(KeyValueCardShapeUtil.type).toBe('strata:key-value-card');
   });
 
-  it('declares pairs as an array prop', () => {
-    expect(KeyValueCardShapeUtil.props.pairs).toBeDefined();
+  it('declares fields as an array prop', () => {
+    expect(KeyValueCardShapeUtil.props.fields).toBeDefined();
   });
 });

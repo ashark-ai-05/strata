@@ -59,7 +59,7 @@ describe('placeResultsOnCanvas', () => {
     placeResultsOnCanvas(editor as never, [
       {
         id: '1', sourceId: 's', kind: 'log-stream' as never,
-        shape: { title: 'log', pairs: [{ key: 'host', value: 'x' }] },
+        shape: { title: 'log', fields: [{ key: 'host', value: 'x' }] },
         provenance: { uri: 'mem://log', fetchedAt: 0 }, freshness: {}, links: [],
       },
     ]);

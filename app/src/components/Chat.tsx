@@ -1,7 +1,9 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Send } from 'lucide-react';
+import { Send, Square, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { applyToolDirective } from '../canvas/dispatcher';
 import { getLatestSnapshot } from '../state/snapshot-ref';
 import { getEditor } from '../state/editor-ref';
@@ -13,8 +15,6 @@ import type { ToolDirective } from '../../../src/agent/types';
  *   { type: 'tool-<toolName>' | 'dynamic-tool',
  *     state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error',
  *     toolCallId, input?, output?, errorText? }
- * — NOT as { type: 'tool-output-available' }. We narrow with helpers below
- * so the dispatch logic and indicator rendering stay readable.
  */
 type ToolPart = {
   type: string;
@@ -30,10 +30,8 @@ function isToolPart(p: { type: string }): p is ToolPart {
   return p.type === 'dynamic-tool' || p.type.startsWith('tool-');
 }
 
-/** Pretty-print the tool name from a part, for the "calling X…" indicator. */
 function toolPartName(p: ToolPart): string {
   if (p.type === 'dynamic-tool') return p.toolName ?? 'unknown';
-  // 'tool-mcp__strata__place_widget' → 'place_widget'; 'tool-foo' → 'foo'.
   const raw = p.type.slice('tool-'.length);
   const last = raw.split('__').pop();
   return last && last.length > 0 ? last : raw;
@@ -63,16 +61,36 @@ function parseToolOutput(
 }
 
 export function Chat() {
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop, error } = useChat({
     transport: new DefaultChatTransport({
       api: '/v1/chat',
       body: () => ({ canvasSnapshot: getLatestSnapshot() }),
     }),
   });
   const [input, setInput] = useState('');
-  const isStreaming = status === 'streaming';
+  const isStreaming = status === 'streaming' || status === 'submitted';
   const appliedRef = useRef<Set<string>>(new Set());
+  const errorShownRef = useRef<unknown>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // Surface chat-level errors as a toast (network failure, 5xx, etc.) and
+  // dedupe so the same Error doesn't fire repeatedly across re-renders.
+  useEffect(() => {
+    if (error && error !== errorShownRef.current) {
+      errorShownRef.current = error;
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error('Chat error', { description: message });
+    }
+  }, [error]);
+
+  // Auto-scroll to bottom when new content streams in.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  // Apply any directive that arrived in the stream to the tldraw canvas.
   useEffect(() => {
     const editor = getEditor();
     if (!editor) return;
@@ -92,7 +110,9 @@ export function Chat() {
         try {
           applyToolDirective(editor, parsed.directive, tplId);
         } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
           console.error('[chat] applyToolDirective failed:', e);
+          toast.error('Could not place widget', { description: message });
         }
         appliedRef.current.add(op.toolCallId);
       }
@@ -101,60 +121,114 @@ export function Chat() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isStreaming) return;
     sendMessage({ text: input });
     setInput('');
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.length === 0 && (
-          <div className="text-center text-zinc-500 mt-12">
-            <p className="text-lg">strata</p>
-            <p className="text-sm">Type a message to start.</p>
-          </div>
+    <div className="flex h-full flex-col relative">
+      {/* Streaming shimmer at the very top of the panel — Vercel-style "the system is alive". */}
+      <AnimatePresence>
+        {isStreaming && (
+          <motion.div
+            className="strata-header-pulse absolute top-0 left-0 right-0 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
         )}
-        {messages.map((m) => (
-          <div key={m.id} className="flex flex-col gap-1">
-            <div className="text-xs uppercase tracking-wider text-zinc-500">
-              {m.role}
+      </AnimatePresence>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5">
+        {messages.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mt-12 px-6"
+          >
+            <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full strata-glass">
+              <Sparkles className="size-3 text-violet-400" />
+              <span className="text-xs text-zinc-400">Strata · agent-driven canvas</span>
             </div>
-            <div className="whitespace-pre-wrap text-zinc-100">
-              {(m.parts as Array<{ type: string }>).map((p, i) => {
-                if (p.type === 'text') {
-                  return <span key={i}>{(p as unknown as { text: string }).text}</span>;
+            <p className="text-base text-zinc-200 font-medium">Ask anything about your knowledge.</p>
+            <p className="text-sm text-zinc-500 mt-1">
+              Search, drill in, place widgets. The canvas reshapes around your question.
+            </p>
+          </motion.div>
+        )}
+
+        <AnimatePresence initial={false}>
+          {messages.map((m) => (
+            <motion.div
+              key={m.id}
+              layout="position"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
+              className="flex flex-col gap-1.5"
+            >
+              <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium">
+                {m.role === 'user' ? 'you' : 'strata'}
+              </div>
+              <div
+                className={
+                  m.role === 'user'
+                    ? 'whitespace-pre-wrap text-zinc-100 leading-relaxed strata-glass rounded-xl px-4 py-3'
+                    : 'whitespace-pre-wrap text-zinc-100 leading-relaxed'
                 }
-                if (isToolPart(p)) {
-                  const tp = p as ToolPart;
-                  if (tp.state === 'input-available' || tp.state === 'input-streaming') {
-                    return (
-                      <span key={i} className="block text-xs text-zinc-500 italic">
-                        calling {toolPartName(tp)}…
-                      </span>
-                    );
+              >
+                {(m.parts as Array<{ type: string }>).map((p, i) => {
+                  if (p.type === 'text') {
+                    return <span key={i}>{(p as unknown as { text: string }).text}</span>;
                   }
-                  if (tp.state === 'output-error') {
-                    return (
-                      <span key={i} className="block text-xs text-red-400">
-                        tool error ({toolPartName(tp)}): {tp.errorText ?? 'unknown'}
-                      </span>
-                    );
+                  if (isToolPart(p)) {
+                    const tp = p as ToolPart;
+                    if (tp.state === 'input-available' || tp.state === 'input-streaming') {
+                      return (
+                        <span
+                          key={i}
+                          className="block text-xs text-zinc-400 italic mt-1.5"
+                        >
+                          <span className="strata-tool-spinner" />
+                          calling {toolPartName(tp)}…
+                        </span>
+                      );
+                    }
+                    if (tp.state === 'output-error') {
+                      return (
+                        <span key={i} className="block text-xs text-red-400 mt-1.5">
+                          tool error ({toolPartName(tp)}): {tp.errorText ?? 'unknown'}
+                        </span>
+                      );
+                    }
+                    // output-available: directive applied silently in the useEffect.
+                    return null;
                   }
-                  // state === 'output-available': directive already applied in
-                  // the useEffect; render nothing here.
                   return null;
-                }
-                return null;
-              })}
-            </div>
-          </div>
-        ))}
+                })}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* "Thinking…" indicator that fires the moment the user submits, before
+            any streamed content arrives. Disappears once the first chunk lands. */}
+        {isStreaming && messages[messages.length - 1]?.role === 'user' && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-zinc-500 text-xs"
+          >
+            <span className="strata-streaming-pulse" />
+            thinking…
+          </motion.div>
+        )}
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="border-t border-zinc-800 p-4 flex gap-2"
+        className="border-t border-zinc-800/80 p-3 flex gap-2 strata-glass"
       >
         <input
           type="text"
@@ -162,16 +236,28 @@ export function Chat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything…"
           disabled={isStreaming}
-          className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 disabled:opacity-50"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20 transition-all disabled:opacity-50"
         />
-        <button
-          type="submit"
-          disabled={isStreaming || !input.trim()}
-          aria-label="Send"
-          className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 disabled:opacity-50 disabled:hover:bg-zinc-800 transition-colors"
-        >
-          <Send className="size-4" />
-        </button>
+        {isStreaming ? (
+          <button
+            type="button"
+            onClick={() => stop()}
+            aria-label="Stop"
+            className="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-100 transition-colors flex items-center justify-center"
+            title="Stop generating"
+          >
+            <Square className="size-4" fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            aria-label="Send"
+            className="px-3.5 py-2.5 rounded-xl strata-btn-accent flex items-center justify-center"
+          >
+            <Send className="size-4" />
+          </button>
+        )}
       </form>
     </div>
   );

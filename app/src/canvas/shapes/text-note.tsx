@@ -6,6 +6,7 @@ import {
   type TLBaseShape,
 } from 'tldraw';
 import { T } from 'tldraw';
+import { CardBody, CardFrame, CardHeader, CardTitle } from './shared';
 
 export type TextNoteShape = TLBaseShape<
   'strata:text-note',
@@ -39,30 +40,21 @@ export class TextNoteShapeUtil extends ShapeUtil<TextNoteShape> {
 
   override component(shape: TextNoteShape) {
     return (
-      <HTMLContainer
-        style={{
-          width: shape.props.w,
-          height: shape.props.h,
-          padding: 12,
-          background: '#18181b',
-          color: '#fafafa',
-          border: '1px solid #3f3f46',
-          borderRadius: 6,
-          fontSize: 14,
-          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-          overflow: 'hidden',
-          pointerEvents: 'all',
-        }}
-      >
-        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {shape.props.text}
-        </div>
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <CardTitle>Note</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{shape.props.text}</div>
+          </CardBody>
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: TextNoteShape) {
-    return <rect width={shape.props.w} height={shape.props.h} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {

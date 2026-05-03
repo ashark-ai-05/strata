@@ -27,6 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.0.0",
     "ai": "^6.0.0",
     "better-sqlite3": "^11.0.0",
+    "framer-motion": "^12.38.0",
     "hono": "^4.0.0",
     "lucide-react": "^0.460.0",
     "ollama": "*",
@@ -34,15 +35,16 @@
     "openai": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.0.0",
+    "remark-gfm": "^4.0.0",
+    "sonner": "^2.0.7",
     "sqlite-vec": "^0.1.6",
+    "tldraw": "^3.0.0",
     "tree-sitter-typescript": "^0.23.0",
     "web-tree-sitter": "^0.24.0",
     "yaml": "^2.8.3",
     "zod": "*",
-    "tldraw": "^3.0.0",
-    "zustand": "^5.0.0",
-    "react-markdown": "^10.0.0",
-    "remark-gfm": "^4.0.0"
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/server-filesystem": "*",

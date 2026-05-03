@@ -33,7 +33,7 @@ export function shapeProps(
         w: size.w,
         h: size.h,
         title: (result.shape as { title?: string }).title ?? result.kind,
-        pairs: (result.shape as { pairs?: Array<{ key: string; value: string }> }).pairs ?? [],
+        fields: (result.shape as { fields?: Array<{ key: string; value: string }> }).fields ?? [],
         ...base,
       };
   }

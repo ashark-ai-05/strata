@@ -33,7 +33,7 @@ const traceXEverywhereLayout: TemplateLayout = (results, viewport) => {
       w: 320,
       h: 200,
       title: 'Subject',
-      pairs: [{ key: 'results', value: String(results.length) }],
+      fields: [{ key: 'results', value: String(results.length) }],
     },
   });
 

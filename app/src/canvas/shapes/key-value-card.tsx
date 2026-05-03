@@ -6,7 +6,7 @@ import {
   type RecordProps,
   type TLBaseShape,
 } from 'tldraw';
-import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
+import { CardBody, CardFrame, CardHeader, CardTitle, Tag } from './shared';
 
 type KeyValuePair = { key: string; value: string };
 
@@ -16,7 +16,7 @@ export type KeyValueCardShape = TLBaseShape<
     w: number;
     h: number;
     title: string;
-    pairs: KeyValuePair[];
+    fields: KeyValuePair[];
     uri?: string;
   }
 >;
@@ -28,12 +28,12 @@ export class KeyValueCardShapeUtil extends ShapeUtil<KeyValueCardShape> {
     w: T.number,
     h: T.number,
     title: T.string,
-    pairs: T.arrayOf(T.object({ key: T.string, value: T.string })),
+    fields: T.arrayOf(T.object({ key: T.string, value: T.string })),
     uri: T.optional(T.string),
   };
 
   override getDefaultProps(): KeyValueCardShape['props'] {
-    return { w: 320, h: 180, title: 'Untitled', pairs: [] };
+    return { w: 320, h: 180, title: 'Untitled', fields: [] };
   }
 
   override getGeometry(shape: KeyValueCardShape) {
@@ -46,24 +46,34 @@ export class KeyValueCardShapeUtil extends ShapeUtil<KeyValueCardShape> {
 
   override component(shape: KeyValueCardShape) {
     return (
-      <HTMLContainer style={{ ...cardFrame, width: shape.props.w, height: shape.props.h }}>
-        <div style={cardHeader}>
-          <CardTitle>{shape.props.title}</CardTitle>
-          <span style={tag}>data</span>
-        </div>
-        <div style={cardBody}>
-          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
-            {shape.props.pairs.map((p, i) => (
-              <FragmentRow key={i} k={p.key} v={p.value} />
-            ))}
-          </dl>
-        </div>
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <CardTitle>{shape.props.title}</CardTitle>
+            <Tag>data</Tag>
+          </CardHeader>
+          <CardBody>
+            <dl
+              style={{
+                margin: 0,
+                display: 'grid',
+                gridTemplateColumns: 'minmax(80px, auto) 1fr',
+                rowGap: 6,
+                columnGap: 14,
+              }}
+            >
+              {shape.props.fields.map((p, i) => (
+                <Row key={i} k={p.key} v={p.value} />
+              ))}
+            </dl>
+          </CardBody>
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: KeyValueCardShape) {
-    return <rect width={shape.props.w} height={shape.props.h} rx={8} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {
@@ -71,10 +81,20 @@ export class KeyValueCardShapeUtil extends ShapeUtil<KeyValueCardShape> {
   }
 }
 
-function FragmentRow({ k, v }: { k: string; v: string }) {
+function Row({ k, v }: { k: string; v: string }) {
   return (
     <>
-      <dt style={{ color: '#71717a', fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{k}</dt>
+      <dt
+        style={{
+          color: '#a1a1aa',
+          fontFamily: 'ui-monospace, monospace',
+          fontSize: 11.5,
+          letterSpacing: 0.02,
+          alignSelf: 'baseline',
+        }}
+      >
+        {k}
+      </dt>
       <dd style={{ margin: 0, color: '#fafafa', wordBreak: 'break-word' }}>{v}</dd>
     </>
   );

@@ -8,7 +8,7 @@ import {
 } from 'tldraw';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { cardBody, cardFrame, cardHeader, CardTitle, tag } from './shared';
+import { CardBody, CardFrame, CardHeader, CardTitle, Tag } from './shared';
 
 export type MarkdownShape = TLBaseShape<
   'strata:markdown',
@@ -46,22 +46,24 @@ export class MarkdownShapeUtil extends ShapeUtil<MarkdownShape> {
 
   override component(shape: MarkdownShape) {
     return (
-      <HTMLContainer style={{ ...cardFrame, width: shape.props.w, height: shape.props.h }}>
-        <div style={cardHeader}>
-          <CardTitle>{shape.props.title ?? 'Document'}</CardTitle>
-          <span style={tag}>md</span>
-        </div>
-        <div style={cardBody}>
-          <div className="strata-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{shape.props.body}</ReactMarkdown>
-          </div>
-        </div>
+      <HTMLContainer>
+        <CardFrame shape={shape}>
+          <CardHeader>
+            <CardTitle>{shape.props.title ?? 'Document'}</CardTitle>
+            <Tag>md</Tag>
+          </CardHeader>
+          <CardBody>
+            <div className="strata-markdown">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{shape.props.body}</ReactMarkdown>
+            </div>
+          </CardBody>
+        </CardFrame>
       </HTMLContainer>
     );
   }
 
   override indicator(shape: MarkdownShape) {
-    return <rect width={shape.props.w} height={shape.props.h} rx={8} />;
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} />;
   }
 
   override canResize() {

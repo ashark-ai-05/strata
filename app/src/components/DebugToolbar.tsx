@@ -98,7 +98,7 @@ export function DebugToolbar() {
           w: 320,
           h: 200,
           title: 'k8s deployment',
-          pairs: [
+          fields: [
             { key: 'name', value: 'auth-svc' },
             { key: 'replicas', value: '3' },
             { key: 'image', value: 'auth-svc:v1.2.3' },
@@ -109,42 +109,93 @@ export function DebugToolbar() {
     },
   ];
 
+  const clearAll = () => {
+    const ids = editor
+      .getCurrentPageShapes()
+      .filter((s) => s.type.startsWith('strata:'))
+      .map((s) => s.id);
+    if (ids.length > 0) editor.deleteShapes(ids);
+  };
+
   return (
     <div
+      className="strata-glass"
       style={{
         position: 'absolute',
         top: 60,
         left: 12,
         zIndex: 200,
         display: 'flex',
-        gap: 6,
-        padding: 6,
-        background: 'rgba(24, 24, 27, 0.95)',
-        border: '1px solid #3f3f46',
-        borderRadius: 8,
-        backdropFilter: 'blur(8px)',
+        gap: 4,
+        padding: 5,
+        borderRadius: 10,
       }}
     >
-      <span style={{ fontSize: 11, color: '#71717a', alignSelf: 'center', padding: '0 6px' }}>
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: '#71717a',
+          alignSelf: 'center',
+          padding: '0 8px',
+        }}
+      >
         debug
       </span>
       {buttons.map((b) => (
         <button
           key={b.label}
           onClick={b.onClick}
+          className="strata-toolbar-btn"
           style={{
-            padding: '4px 10px',
+            padding: '5px 11px',
             fontSize: 12,
-            background: '#27272a',
-            color: '#fafafa',
-            border: '1px solid #3f3f46',
-            borderRadius: 4,
+            fontWeight: 500,
+            background: 'rgba(39, 39, 42, 0.6)',
+            color: '#e4e4e7',
+            border: '1px solid rgba(63, 63, 70, 0.5)',
+            borderRadius: 6,
             cursor: 'pointer',
+            transition: 'background 120ms ease, border-color 120ms ease, transform 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(63, 63, 70, 0.7)';
+            e.currentTarget.style.borderColor = 'rgba(82, 82, 91, 0.8)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(39, 39, 42, 0.6)';
+            e.currentTarget.style.borderColor = 'rgba(63, 63, 70, 0.5)';
           }}
         >
           {b.label}
         </button>
       ))}
+      <span style={{ width: 1, background: 'rgba(63,63,70,0.5)', alignSelf: 'stretch', margin: '2px 4px' }} />
+      <button
+        onClick={clearAll}
+        title="Remove all Strata widgets from the canvas"
+        style={{
+          padding: '5px 11px',
+          fontSize: 12,
+          fontWeight: 500,
+          background: 'rgba(239, 68, 68, 0.08)',
+          color: '#fca5a5',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: 6,
+          cursor: 'pointer',
+          transition: 'background 120ms ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.18)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+        }}
+      >
+        Clear all
+      </button>
     </div>
   );
 }
