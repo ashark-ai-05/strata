@@ -78,10 +78,57 @@ export function applyToolDirective(
       useTemplateStore.getState().setActiveTemplateId(directive.id);
       return;
     }
+    case 'focus': {
+      const shape = editor.getShape(('shape:' + directive.id) as never);
+      if (!shape) throw new Error(`shape not found for id: ${directive.id}`);
+      const sx = (shape as { x: number }).x;
+      const sy = (shape as { y: number }).y;
+      const sw = (shape as { props: { w?: number } }).props.w ?? 320;
+      const sh = (shape as { props: { h?: number } }).props.h ?? 200;
+      editor.zoomToBounds({ x: sx, y: sy, w: sw, h: sh } as never, {
+        inset: 80,
+        animation: { duration: 200 },
+      } as never);
+      return;
+    }
+    case 'link': {
+      const from = editor.getShape(('shape:' + directive.fromId) as never);
+      const to = editor.getShape(('shape:' + directive.toId) as never);
+      if (!from || !to) {
+        throw new Error(
+          `link: missing shape (from=${directive.fromId}, to=${directive.toId})`,
+        );
+      }
+      const fx =
+        (from as { x: number }).x +
+        ((from as { props: { w?: number } }).props.w ?? 320) / 2;
+      const fy =
+        (from as { y: number }).y +
+        ((from as { props: { h?: number } }).props.h ?? 200) / 2;
+      const tx =
+        (to as { x: number }).x +
+        ((to as { props: { w?: number } }).props.w ?? 320) / 2;
+      const ty =
+        (to as { y: number }).y +
+        ((to as { props: { h?: number } }).props.h ?? 200) / 2;
+      editor.createShape({
+        id: ('shape:' + directive.linkId) as never,
+        type: 'arrow',
+        x: 0,
+        y: 0,
+        props: {
+          start: { x: fx, y: fy },
+          end: { x: tx, y: ty },
+          text: directive.label ?? '',
+        } as never,
+      } as never);
+      return;
+    }
     default:
-      // Remaining directive types (focus/link) added in T25-T26.
+      // All directive types are implemented; this branch guards against
+      // unknown future types added to the union without a matching case.
       throw new Error(
-        `applyToolDirective: directive type "${(directive as { type: string }).type}" not implemented yet`,
+        `applyToolDirective: unknown directive type "${(directive as { type: string }).type}"`,
       );
   }
 }

@@ -51,10 +51,10 @@ describe('applyToolDirective — place', () => {
     expect(() =>
       applyToolDirective(
         editor,
-        { type: 'focus' as never, id: 'x' as never } as ToolDirective,
+        { type: 'bogus-directive-type' as never } as ToolDirective,
         'ask-anything',
       ),
-    ).toThrow(/not implemented yet/);
+    ).toThrow(/unknown directive type/);
   });
 
   it('maps each WidgetKind to its tldraw shape type', () => {
