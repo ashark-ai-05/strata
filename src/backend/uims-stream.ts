@@ -64,6 +64,19 @@ export async function* providerEventsToUIMS(
           yield emit({ type: 'reasoning-delta', id: reasoningId, delta: event.text });
           break;
 
+        case 'tool-call':
+          // Top-level chunk — does NOT close any open text/reasoning bracket.
+          // Agent loops often interleave tool calls inside a single text stream
+          // ("let me search…" → tool-call → continue same text); cutting the
+          // bracket would cause the UI to start a new text part and stutter.
+          yield emit({
+            type: 'tool-input-available',
+            toolCallId: event.toolCallId,
+            toolName: event.name,
+            input: event.input,
+          });
+          break;
+
         case 'error':
           // UIMS has a first-class error chunk — the client surfaces this
           // via useChat's `error` state instead of silently truncating.
@@ -82,7 +95,7 @@ export async function* providerEventsToUIMS(
           // Fall through to the post-loop cleanup so brackets close once.
           break;
 
-        // tool-call / tool-result deferred to Plan 5
+        // tool-result forwarding deferred to Plan 5 T18
       }
     }
 
