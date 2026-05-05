@@ -246,6 +246,81 @@ app.post('/v1/query', async (c) => {
   app.route('/', lazyApp);
 }
 
+// Out-of-process MCP backing endpoints (used by src/mcp-server/index.ts
+// when Strata runs under the Amp profile and the agent's tools are
+// hosted in a separate stdio process). These are thin proxies over the
+// existing services.
+{
+  const lazyApp = new Hono();
+  lazyApp.get('/v1/fetch', async (c) => {
+    const state = await getState();
+    const id = c.req.query('id');
+    if (!id) return c.json({ error: 'id is required' }, 400);
+    const search = state.getSearchService();
+    const out = await search.fetchById(id);
+    if (!out) return c.json({ error: 'not found' }, 404);
+    return c.json(out);
+  });
+  app.route('/', lazyApp);
+}
+
+{
+  const lazyApp = new Hono();
+  lazyApp.post('/v1/web-search', async (c) => {
+    const state = await getState();
+    const body = (await c.req.json().catch(() => ({}))) as {
+      query?: string;
+      limit?: number;
+    };
+    if (!body.query) return c.json({ error: 'query is required' }, 400);
+    const provider = state.getWebSearchProvider();
+    const results = await provider.search(body.query, body.limit ?? 5);
+    return c.json({ results });
+  });
+  app.route('/', lazyApp);
+}
+
+// /v1/canvas-snapshot:
+//   GET   → full snapshot ({activeTemplateId, widgets[]})
+//   POST  → { id } → single widget payload
+//
+// Both are populated by `chat.ts` mirroring the user's last canvasSnapshot
+// into BackendState.setLatestSnapshot — read-only for the MCP server.
+{
+  const lazyApp = new Hono();
+  lazyApp.get('/v1/canvas-snapshot', async (c) => {
+    const state = await getState();
+    const snap = state.getLatestSnapshot();
+    if (!snap) {
+      return c.json({ activeTemplateId: 'ask-anything', widgets: [] });
+    }
+    return c.json({
+      activeTemplateId: snap.activeTemplateId,
+      widgets: snap.widgets.map((w) => ({
+        id: w.id,
+        kind: w.kind,
+        role: w.role,
+        title: w.title,
+        // summary trimmed: full payloads are exposed via POST.
+        summary:
+          typeof w.payload['body'] === 'string'
+            ? (w.payload['body'] as string).slice(0, 200)
+            : '',
+      })),
+    });
+  });
+  lazyApp.post('/v1/canvas-snapshot', async (c) => {
+    const state = await getState();
+    const body = (await c.req.json().catch(() => ({}))) as { id?: string };
+    if (!body.id) return c.json({ error: 'id is required' }, 400);
+    const snap = state.getLatestSnapshot();
+    const widget = snap?.widgets.find((w) => w.id === body.id);
+    if (!widget) return c.json({ error: 'widget not found' }, 404);
+    return c.json(widget);
+  });
+  app.route('/', lazyApp);
+}
+
 export async function start(port: number): Promise<void> {
   const { serve } = await import('@hono/node-server');
   const s = await getState();
