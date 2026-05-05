@@ -455,30 +455,59 @@
   background-position: -12px -12px;
 }
 
-/* Bottom-left mini-map button. Glass + violet hover. */
+/* Bottom-left minimap container — glass panel with a small header chip
+   and a clickable SVG thumbnail beneath it. */
 .strata-canvas-map {
   position: absolute;
   left: 16px;
   bottom: 16px;
   z-index: 5;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(10, 10, 13, 0.78), rgba(10, 10, 13, 0.78)) padding-box,
+    var(--grad-brand-soft) border-box;
+  border: 1px solid transparent;
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 12px 30px -10px rgba(0, 0, 0, 0.6),
+    0 0 24px -8px rgba(167, 139, 250, 0.3);
+  transition: transform 160ms ease, box-shadow 200ms ease, opacity 160ms ease;
+}
+.strata-canvas-map:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 36px -8px rgba(0, 0, 0, 0.65),
+    0 0 32px -6px rgba(167, 139, 250, 0.45);
+}
+.strata-canvas-map-header {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(10, 10, 13, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--color-fg-2);
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  backdrop-filter: blur(14px);
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
 }
-.strata-canvas-map:hover {
-  background: rgba(167, 139, 250, 0.12);
-  color: #fafafa;
-  border-color: rgba(167, 139, 250, 0.4);
+.strata-canvas-map-header svg {
+  color: var(--color-accent);
+}
+.strata-canvas-map-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0)),
+    rgba(0, 0, 0, 0.4);
+  cursor: crosshair;
+  user-select: none;
 }
 
 /* Generic header icon button. Used by HeaderCanvasControls + HeaderDrawTools. */
@@ -1255,16 +1284,7 @@ header [aria-hidden].size-5.rounded-md {
     linear-gradient(90deg, rgba(167, 139, 250, 0.10) 0%, rgba(240, 171, 252, 0.06) 100%);
 }
 
-/* Canvas-map pill — gradient hover. */
-.strata-canvas-map {
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
-}
-.strata-canvas-map:hover {
-  background: var(--grad-brand-soft);
-  border-color: rgba(167, 139, 250, 0.5);
-  color: #fafafa;
-  transform: translateY(-1px);
-}
+/* (Canvas-map polish moved into the real minimap selector earlier.) */
 
 /* Launcher bubble — animated gradient + breathing. */
 .strata-chat-launcher {

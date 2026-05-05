@@ -6,7 +6,6 @@ import { ToolsBridge } from './ToolsBridge';
 import { CollapsibleStylePanel } from '../components/CollapsibleStylePanel';
 import { CanvasGrid } from '../components/CanvasGrid';
 import { CanvasMap } from '../components/CanvasMap';
-import { useUiStore } from '../state/ui-store';
 import { MarkdownShapeUtil } from './shapes/markdown';
 import { CodeBlockShapeUtil } from './shapes/code-block';
 import { TicketCardShapeUtil } from './shapes/ticket-card';
@@ -100,22 +99,31 @@ export function Canvas() {
     [activeId]
   );
 
-  // Capture-phase wheel listener that swallows scroll outside any
-  // `.strata-card-body` when the user has the canvas locked. Lets folks
-  // scroll inside a code-block / file-tree without the canvas zooming
-  // out from under them.
-  const wheelLocked = useUiStore((s) => s.canvasWheelLocked);
+  // Capture-phase wheel listener that scroll-locks the canvas while the
+  // pointer is over a SCROLLABLE widget body. Without this, tldraw
+  // captures the wheel event before the body's overflow:auto can scroll,
+  // so a long code-block / file-tree zooms the canvas instead of
+  // scrolling its content. We DON'T preventDefault — only stopPropagation
+  // — so the body still receives its native scroll. tldraw never sees it.
+  //
+  // Always-on (no gate). Outside any card body the listener is a no-op,
+  // so tldraw's pan/zoom on the empty canvas is unaffected.
   useEffect(() => {
-    if (!wheelLocked) return;
     const onWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest('.strata-card-body')) return;
+      const body = target?.closest('.strata-card-body') as HTMLElement | null;
+      if (!body) return;
+      // Only lock when the body actually has overflow content. Idle
+      // (non-scrolling) bodies — small markdown notes, single-line
+      // tickets — let the wheel through to tldraw so the user can still
+      // pan/zoom while hovering over the card.
+      const scrollable = body.scrollHeight > body.clientHeight + 1;
+      if (!scrollable) return;
       e.stopPropagation();
-      e.preventDefault();
     };
-    document.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    document.addEventListener('wheel', onWheel, { capture: true, passive: true });
     return () => document.removeEventListener('wheel', onWheel, { capture: true });
-  }, [wheelLocked]);
+  }, []);
 
   return (
     <div className="size-full" style={{ position: 'relative' }}>
@@ -128,8 +136,11 @@ export function Canvas() {
       >
         <ToolsBridge />
         <EmptyCanvasHint />
+        {/* CanvasMap mounts INSIDE Tldraw so useEditor()+useValue() can
+            subscribe to viewport + shape state without manual store-listen.
+            It positions itself absolutely against this Tldraw container. */}
+        <CanvasMap />
       </Tldraw>
-      <CanvasMap />
     </div>
   );
 }
