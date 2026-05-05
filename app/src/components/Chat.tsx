@@ -14,6 +14,7 @@ import { TeamProgress, TeamHandoff } from './TeamProgress';
 import { useChatActions } from '../state/chat-actions-store';
 import { useConversationsStore } from '../state/conversations-store';
 import { useKbStats } from '../state/kb-stats-store';
+import { useUiStore } from '../state/ui-store';
 import type { ToolDirective } from '../../../src/agent/types';
 
 /**
@@ -164,6 +165,11 @@ export function Chat() {
   });
   const [input, setInput] = useState('');
   const isStreaming = status === 'streaming' || status === 'submitted';
+  // Mirror streaming state into ui-store so the floating chat title bar
+  // and composer status pill can react without prop drilling.
+  useEffect(() => {
+    useUiStore.getState().setChatBusy(isStreaming);
+  }, [isStreaming]);
   // Pre-fill with toolCallIds from loaded history so we don't redispatch
   // directives the canvas already has from the prior session.
   const appliedRef = useRef<Set<string>>(

@@ -433,3 +433,460 @@
   from { background-position: 200% 0; }
   to   { background-position: -200% 0; }
 }
+
+/* ----------------------------------------------------------------------
+ * Polish chrome — canvas grid, mini-map, header buttons, style panel,
+ * floating chat. All driven by data-attrs so state lives in Zustand /
+ * tldraw and CSS just visualises it.
+ * ---------------------------------------------------------------------- */
+
+/* Subtle dotted-grid behind tldraw — pure background, no JS. */
+.strata-canvas-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -12px -12px;
+}
+
+/* Bottom-left mini-map button. Glass + violet hover. */
+.strata-canvas-map {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(10, 10, 13, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-fg-2);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.strata-canvas-map:hover {
+  background: rgba(167, 139, 250, 0.12);
+  color: #fafafa;
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+/* Generic header icon button. Used by HeaderCanvasControls + HeaderDrawTools. */
+.strata-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-fg-2);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.strata-header-btn:hover {
+  color: #fafafa;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+}
+.strata-header-btn[data-pressed='true'] {
+  background: rgba(167, 139, 250, 0.16);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #fafafa;
+}
+.strata-header-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 6px;
+}
+
+/* Collapsible style panel — slides in from right. */
+.strata-style-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.strata-style-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(10, 10, 13, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-fg-2);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+}
+.strata-style-panel-toggle:hover {
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #fafafa;
+}
+
+/* ----------------------------------------------------------------------
+ * Floating chat — framer-motion <motion.aside> driven by data-mode,
+ * data-fullmode, data-dragging, data-streaming.
+ * ---------------------------------------------------------------------- */
+
+.strata-chat-floating {
+  position: fixed;
+  z-index: 30;
+  width: min(440px, 90vw);
+  height: min(540px, 80vh);
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 10, 13, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 20px 60px -20px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(167, 139, 250, 0.05) inset;
+  transition: width 200ms ease, height 200ms ease, border-color 240ms ease;
+}
+.strata-chat-floating[data-mode='minimized'] {
+  height: 48px;
+}
+.strata-chat-floating[data-fullmode='full'] {
+  width: min(720px, 92vw);
+  height: min(80vh, 800px);
+}
+.strata-chat-floating[data-streaming='true'] {
+  border-color: rgba(167, 139, 250, 0.34);
+  box-shadow:
+    0 20px 60px -20px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(167, 139, 250, 0.18) inset,
+    0 0 32px -8px rgba(167, 139, 250, 0.25);
+}
+.strata-chat-floating[data-dragging='true'] {
+  cursor: grabbing;
+  transition: none;
+}
+
+.strata-chat-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: grab;
+  flex-shrink: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+.strata-chat-titlebar:active {
+  cursor: grabbing;
+}
+.strata-chat-titlebar-grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-muted);
+}
+.strata-chat-titlebar-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-fg-2);
+}
+.strata-chat-titlebar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.strata-chat-titlebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.strata-chat-titlebar-btn:hover {
+  color: var(--color-fg);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.strata-chat-titlebar-btn[data-danger='true']:hover {
+  color: var(--color-fail);
+  border-color: rgba(248, 113, 113, 0.32);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.strata-chat-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.strata-chat-floating[data-mode='minimized'] .strata-chat-body {
+  display: none;
+}
+
+/* Launcher bubble — visible when chatWindow.mode === 'collapsed'. */
+.strata-chat-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(10, 10, 13, 0.86);
+  border: 1px solid rgba(167, 139, 250, 0.34);
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px -12px rgba(167, 139, 250, 0.4);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.strata-chat-launcher:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 50px -10px rgba(167, 139, 250, 0.55);
+}
+
+/* Composer streaming/options accents */
+.strata-composer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.26);
+  color: #ddd6fe;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.strata-composer-status[data-state='idle'] {
+  display: none;
+}
+
+/* Composite + interactive widget bodies (added in Phase 5) */
+.strata-composite {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.strata-composite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.strata-composite-section-heading {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.strata-composite-fallback {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--color-fg-2);
+  white-space: pre-wrap;
+  margin: 0;
+}
+.strata-composite-ticket {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.strata-tag-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* tasks shape rows */
+.strata-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.strata-tasks-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+  color: var(--color-fg);
+}
+.strata-tasks-row[data-done='true'] .strata-tasks-text {
+  text-decoration: line-through;
+  color: var(--color-muted);
+}
+.strata-tasks-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-accent);
+}
+.strata-tasks-text {
+  flex: 1;
+}
+.strata-tasks-assignee, .strata-tasks-due {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+/* kanban board */
+.strata-kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.strata-kanban-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.strata-kanban-col[data-colour='blue']    { border-color: rgba(96, 165, 250, 0.32); }
+.strata-kanban-col[data-colour='amber']   { border-color: rgba(251, 191, 36, 0.32); }
+.strata-kanban-col[data-colour='green']   { border-color: rgba(52, 211, 153, 0.32); }
+.strata-kanban-col[data-colour='rose']    { border-color: rgba(251, 113, 133, 0.32); }
+.strata-kanban-col[data-colour='violet']  { border-color: rgba(167, 139, 250, 0.32); }
+.strata-kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.strata-kanban-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.strata-kanban-card {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+.strata-kanban-card-title { font-weight: 500; color: var(--color-fg); }
+.strata-kanban-card-body { color: var(--color-fg-2); font-size: 11.5px; line-height: 1.45; }
+.strata-kanban-card-assignee { font-size: 10.5px; color: var(--color-muted); }
+
+/* sticky note */
+.strata-sticky {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-family: 'Caveat', 'Patrick Hand', 'Marker Felt', cursive;
+  font-size: 18px;
+  line-height: 1.4;
+  color: #1c1917;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 6px 18px -4px rgba(0, 0, 0, 0.4);
+}
+.strata-sticky[data-colour='yellow'] { background: linear-gradient(180deg, #fde68a, #fcd34d); }
+.strata-sticky[data-colour='pink']   { background: linear-gradient(180deg, #fbcfe8, #f9a8d4); }
+.strata-sticky[data-colour='blue']   { background: linear-gradient(180deg, #bfdbfe, #93c5fd); }
+.strata-sticky[data-colour='green']  { background: linear-gradient(180deg, #bbf7d0, #86efac); }
+.strata-sticky[data-colour='violet'] { background: linear-gradient(180deg, #ddd6fe, #c4b5fd); }
+.strata-sticky[data-colour='orange'] { background: linear-gradient(180deg, #fed7aa, #fdba74); }
+.strata-sticky-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+.strata-sticky:hover .strata-sticky-actions {
+  opacity: 1;
+}
+.strata-sticky-body {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.strata-sticky-author {
+  font-size: 14px;
+  color: rgba(28, 25, 23, 0.66);
+}
+
+/* Multi-attribution sources footer */
+.strata-card-footer--multi {
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.strata-card-footer-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.strata-card-footer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-fg-2);
+  font-size: 10.5px;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.strata-card-footer-pill:hover {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #fafafa;
+}

@@ -1,17 +1,34 @@
 import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
-import { Plus, History } from 'lucide-react';
+import { History, Plus, ServerCog } from 'lucide-react';
 import { Canvas } from './canvas/Canvas';
-import { Chat } from './components/Chat';
+import { FloatingChat, FloatingChatLauncher } from './components/FloatingChat';
 import { HealthBadge } from './components/HealthBadge';
 import { ConversationsSidebar } from './components/ConversationsSidebar';
 import { SourcesPanel } from './components/SourcesPanel';
+import { McpSourcesPanel } from './components/McpSourcesPanel';
 import { KbBadge } from './components/KbBadge';
+import { HeaderCanvasControls } from './components/HeaderCanvasControls';
+import { HeaderDrawTools } from './components/HeaderDrawTools';
 import { useCanvasStats } from './state/canvas-stats-store';
 import { useChatActions } from './state/chat-actions-store';
 import { useConversationsStore } from './state/conversations-store';
 import { useKbStats } from './state/kb-stats-store';
+import { useUiStore } from './state/ui-store';
 
+/**
+ * Top-level layout — full-bleed canvas with a glass header on top and a
+ * draggable floating chat panel on top of that. Drawer panels
+ * (ConversationsSidebar / SourcesPanel / McpSourcesPanel) slide in from
+ * either edge.
+ *
+ * Drawer state lives in `ui-store` (sourcesOpen) and local useState
+ * (sidebarOpen, mcpOpen) — separated because the latter two are only
+ * triggered by the header button or the chat options menu, while
+ * sources is pinged from KbBadge.
+ *
+ * Spec: REPLICATION-PROMPT.md §13.
+ */
 export function App() {
   const widgetCount = useCanvasStats((s) => s.widgetCount);
   const newChat = useChatActions((s) => s.newChat);
@@ -19,8 +36,11 @@ export function App() {
   // both with the new conversation's snapshot/messages.
   const activeId = useConversationsStore((s) => s.activeId);
   const conversationCount = useConversationsStore((s) => s.conversations.length);
+  const sourcesOpen = useUiStore((s) => s.sourcesOpen);
+  const setSourcesOpen = useUiStore((s) => s.setSourcesOpen);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [mcpOpen, setMcpOpen] = useState(false);
 
   // Hydrate KB chunk total on mount so the header badge shows a real
   // number from frame zero. Subsequent updates come from the
@@ -39,17 +59,29 @@ export function App() {
       });
   }, [hydrateKb]);
 
+  // Custom events let the chat options menu open the drawers without
+  // prop drilling through Chat / FloatingChat.
+  useEffect(() => {
+    const onOpenHistory = () => setSidebarOpen(true);
+    const onOpenMcp = () => setMcpOpen(true);
+    window.addEventListener('strata:open-history', onOpenHistory);
+    window.addEventListener('strata:open-mcp', onOpenMcp);
+    return () => {
+      window.removeEventListener('strata:open-history', onOpenHistory);
+      window.removeEventListener('strata:open-mcp', onOpenMcp);
+    };
+  }, []);
+
   return (
     <div className="flex h-full flex-col relative bg-[var(--color-bg)]">
-      <header className="flex items-center justify-between px-5 h-12 shrink-0 strata-glass relative z-10 border-b border-white/5">
+      <header className="flex items-center justify-between px-4 h-12 shrink-0 strata-glass relative z-20 border-b border-white/5">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
             aria-label="Conversations"
             title="Conversations"
-            className="inline-flex items-center justify-center size-7 rounded-md text-zinc-300 hover:text-white border border-white/8 hover:border-white/15 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.03)' }}
+            className="strata-header-btn"
           >
             <History className="size-3.5" />
           </button>
@@ -83,9 +115,22 @@ export function App() {
               {conversationCount} chats
             </span>
           )}
+          <span className="strata-header-divider" aria-hidden />
+          <HeaderCanvasControls />
+          <span className="strata-header-divider" aria-hidden />
+          <HeaderDrawTools />
         </div>
         <div className="flex items-center gap-2">
           <KbBadge onClick={() => setSourcesOpen(true)} />
+          <button
+            type="button"
+            onClick={() => setMcpOpen(true)}
+            title="MCP servers"
+            className="strata-header-btn"
+            aria-label="MCP servers"
+          >
+            <ServerCog className="size-3.5" />
+          </button>
           <button
             type="button"
             onClick={() => newChat?.()}
@@ -100,22 +145,20 @@ export function App() {
           <HealthBadge />
         </div>
       </header>
-      <main className="flex-1 min-h-0 grid grid-rows-[1fr_minmax(200px,34%)]">
-        <section className="min-h-0 overflow-hidden border-b border-white/5 relative bg-[var(--color-bg)]">
-          {/* key=activeId forces a clean remount when the user switches
-              conversations, so the tldraw editor hydrates with the new
-              snapshot rather than trying to mutate in-place. */}
-          <Canvas key={activeId} />
-        </section>
-        <section className="min-h-0 overflow-hidden bg-[var(--color-bg)]">
-          <Chat key={activeId} />
-        </section>
+      <main className="flex-1 min-h-0 relative bg-[var(--color-bg)]">
+        {/* key=activeId forces a clean remount when the user switches
+            conversations, so the tldraw editor hydrates with the new
+            snapshot rather than trying to mutate in-place. */}
+        <Canvas key={activeId} />
       </main>
+      <FloatingChat chatKey={activeId} />
+      <FloatingChatLauncher />
       <ConversationsSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
       <SourcesPanel open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
+      <McpSourcesPanel open={mcpOpen} onClose={() => setMcpOpen(false)} />
       <Toaster
         theme="dark"
         position="top-right"

@@ -1,7 +1,12 @@
-import { useCallback, useMemo, useRef } from 'react';
-import { Tldraw, type Editor } from 'tldraw';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Tldraw, type Editor, type TLUiComponents } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { TextNoteShapeUtil } from './shapes/text-note';
+import { ToolsBridge } from './ToolsBridge';
+import { CollapsibleStylePanel } from '../components/CollapsibleStylePanel';
+import { CanvasGrid } from '../components/CanvasGrid';
+import { CanvasMap } from '../components/CanvasMap';
+import { useUiStore } from '../state/ui-store';
 import { MarkdownShapeUtil } from './shapes/markdown';
 import { CodeBlockShapeUtil } from './shapes/code-block';
 import { TicketCardShapeUtil } from './shapes/ticket-card';
@@ -94,20 +99,64 @@ export function Canvas() {
     [activeId]
   );
 
+  // Capture-phase wheel listener that swallows scroll outside any
+  // `.strata-card-body` when the user has the canvas locked. Lets folks
+  // scroll inside a code-block / file-tree without the canvas zooming
+  // out from under them.
+  const wheelLocked = useUiStore((s) => s.canvasWheelLocked);
+  useEffect(() => {
+    if (!wheelLocked) return;
+    const onWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('.strata-card-body')) return;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    document.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    return () => document.removeEventListener('wheel', onWheel, { capture: true });
+  }, [wheelLocked]);
+
   return (
     <div className="size-full" style={{ position: 'relative' }}>
+      <CanvasGrid />
       <Tldraw
         shapeUtils={customShapeUtils}
         snapshot={initialSnapshot}
         onMount={handleMount}
-        // Hide tldraw's branding to keep the surface ours.
-        hideUi={false}
+        components={tldrawUiComponents}
       >
+        <ToolsBridge />
         <DebugToolbar />
         <SearchBar />
         <TemplatePicker />
         <EmptyCanvasHint />
       </Tldraw>
+      <CanvasMap />
     </div>
   );
 }
+
+/**
+ * Strip tldraw's built-in chrome — Strata renders its own header
+ * controls. The CollapsibleStylePanel replaces tldraw's StylePanel so
+ * the right edge stays clear when nothing's selected.
+ *
+ * Spec: REPLICATION-PROMPT.md §13 — `Canvas.tsx`.
+ */
+const tldrawUiComponents: TLUiComponents = {
+  MainMenu: null,
+  MenuPanel: null,
+  PageMenu: null,
+  NavigationPanel: null,
+  ZoomMenu: null,
+  Minimap: null,
+  SharePanel: null,
+  TopPanel: null,
+  DebugMenu: null,
+  DebugPanel: null,
+  HelpMenu: null,
+  Toolbar: null,
+  QuickActions: null,
+  HelperButtons: null,
+  StylePanel: CollapsibleStylePanel,
+};
