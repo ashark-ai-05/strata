@@ -12,9 +12,11 @@ import { collectAppliedToolCallIds } from './chat-persistence';
 import { suggestCommands, tryRunCommand } from './slash-commands';
 import { TeamProgress, TeamHandoff } from './TeamProgress';
 import { search as searchKb, type SearchResult } from '../api/search';
-import { KbHits } from './KbHits';
-import { InlineLiveStep, deriveStep } from './LiveStatus';
+// KbHits + InlineLiveStep stay in the codebase but the floating panels are
+// gone — their content now sits in <ComposerStatus /> next to the input.
+import { deriveStep } from './LiveStatus';
 import { ShowThinking } from './ShowThinking';
+import { ComposerStatus } from './ComposerStatus';
 import { useChatActions } from '../state/chat-actions-store';
 import { useConversationsStore } from '../state/conversations-store';
 import { useKbStats } from '../state/kb-stats-store';
@@ -461,24 +463,9 @@ export function Chat() {
                   }
                   return null;
                 })}
-                {/* Live step indicator INSIDE the latest streaming
-                    assistant message — gives the user real-time progress
-                    in conversation flow rather than as a separate pill.
-                    Only renders for the most recent assistant message
-                    while the request is still in-flight. */}
-                {m.role === 'assistant' &&
-                  m.id ===
-                    [...messages].reverse().find((x) => x.role === 'assistant')
-                      ?.id && (
-                    <InlineLiveStep
-                      step={deriveStep({
-                        isStreaming,
-                        kbBusy,
-                        messages:
-                          messages as Parameters<typeof deriveStep>[0]['messages'],
-                      })}
-                    />
-                  )}
+                {/* Live step + KB hit count are surfaced in the composer
+                    status row instead of inside the message body — keeps
+                    progress next to the input where the user is typing. */}
               </div>
             </motion.div>
           ))}
@@ -486,31 +473,9 @@ export function Chat() {
 
       </div>
 
-      {/* KB hits stay above the composer (hits are persistent + clickable
-          per turn). The live step indicator has been moved INSIDE the
-          streaming assistant message body so progress reads as part of
-          the conversation, not as a floating pill. */}
-      <div className="strata-chat-overlay">
-        <KbHits
-          query={kbQuery}
-          hits={kbHits}
-          busy={kbBusy}
-          onPlace={(hit) => {
-            const editor = getEditor();
-            if (!editor) return;
-            import('../canvas/dispatcher')
-              .then((m) => m.placeResultsOnCanvas(editor, [hit]))
-              .catch((e) => {
-                console.error('[chat] place from KB failed:', e);
-                toast.error('Could not place from KB');
-              });
-          }}
-          onDismiss={() => {
-            setKbHits(null);
-            setKbQuery(null);
-          }}
-        />
-      </div>
+      {/* KB hits and live progress live INSIDE the composer status row
+          now (see ComposerStatus below the form). Click the hit-count
+          chip to expand the full list as a popover. */}
 
       {/* Slash-command suggestion popover. Sits above the form. */}
       <AnimatePresence>
@@ -546,6 +511,34 @@ export function Chat() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Composer status — sits inside the same border-t region as the
+          form so live progress + KB hits visually belong with the input
+          rather than floating above it. */}
+      <ComposerStatus
+        step={deriveStep({
+          isStreaming,
+          kbBusy,
+          messages: messages as Parameters<typeof deriveStep>[0]['messages'],
+        })}
+        query={kbQuery}
+        hits={kbHits}
+        kbBusy={kbBusy}
+        onPlace={(hit) => {
+          const editor = getEditor();
+          if (!editor) return;
+          import('../canvas/dispatcher')
+            .then((m) => m.placeResultsOnCanvas(editor, [hit]))
+            .catch((e) => {
+              console.error('[chat] place from KB failed:', e);
+              toast.error('Could not place from KB');
+            });
+        }}
+        onDismissHits={() => {
+          setKbHits(null);
+          setKbQuery(null);
+        }}
+      />
 
       <form
         onSubmit={handleSubmit}
