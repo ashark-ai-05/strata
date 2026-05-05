@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useDragControls } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GripVertical, Maximize2, Minimize2, Minus, X } from 'lucide-react';
 import { Chat } from './Chat';
 import { ChatStatusBar } from './ChatStatusBar';
@@ -30,6 +30,39 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
   const dragControls = useDragControls();
   const [dragging, setDragging] = useState(false);
 
+  // Toggle fullMode AND snap the drag offset back to (0, 0) so the
+  // larger size always anchors at the visible bottom-right corner.
+  // Without the snap, a user who dragged the chat upward and then
+  // hit "expand" could end up with the title bar pushed above the
+  // viewport — and no way to grab the restore button.
+  const toggleFullMode = () => {
+    const next = chatWindow.fullMode === 'full' ? 'normal' : 'full';
+    x.set(0);
+    y.set(0);
+    setChatWindow({ fullMode: next, dragX: 0, dragY: 0 });
+  };
+
+  // Belt-and-braces: if persisted drag offsets came from a previous
+  // session in a smaller window, clamp them to keep the title bar
+  // reachable. Runs once per mount.
+  // (Uses window.innerWidth/Height directly — framer's dragConstraints
+  //  fires only during drag, so this catches the "open in a smaller
+  //  monitor than where you last left it" case.)
+  useEffect(() => {
+    const safeMinX = -window.innerWidth + 120;
+    const safeMaxX = 80;
+    const safeMinY = -window.innerHeight + 120;
+    const safeMaxY = 80;
+    const cx = Math.max(safeMinX, Math.min(safeMaxX, x.get()));
+    const cy = Math.max(safeMinY, Math.min(safeMaxY, y.get()));
+    if (cx !== x.get() || cy !== y.get()) {
+      x.set(cx);
+      y.set(cy);
+      setChatWindow({ dragX: cx, dragY: cy });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (chatWindow.mode === 'collapsed') {
     return null;
   }
@@ -40,12 +73,16 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
       dragControls={dragControls}
       dragListener={false}
       dragMomentum={false}
-      // Constrain to the viewport with some padding.
+      // Keep the title bar reachable from any corner of the viewport.
+      // The chat is anchored bottom-right; x/y are translate offsets,
+      // so negative values move it up-left. We allow it to nearly
+      // exit the screen but always reserve ~120px of overlap so the
+      // title bar (with the restore button) is grabbable.
       dragConstraints={{
-        left: -window.innerWidth + 200,
-        top: -window.innerHeight + 80,
-        right: 200,
-        bottom: 100,
+        left: -window.innerWidth + 120,
+        top: -window.innerHeight + 120,
+        right: 80,
+        bottom: 80,
       }}
       onDragStart={() => setDragging(true)}
       onDragEnd={() => {
@@ -86,11 +123,7 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
             type="button"
             className="strata-chat-titlebar-btn"
             title={chatWindow.fullMode === 'full' ? 'Restore size' : 'Expand'}
-            onClick={() =>
-              setChatWindow({
-                fullMode: chatWindow.fullMode === 'full' ? 'normal' : 'full',
-              })
-            }
+            onClick={toggleFullMode}
           >
             {chatWindow.fullMode === 'full' ? (
               <Minimize2 className="size-3.5" />
