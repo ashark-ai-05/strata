@@ -1882,3 +1882,55 @@ header button:hover {
   text-overflow: ellipsis;
   max-width: 50%;
 }
+
+/* ----------------------------------------------------------------------
+ * Live step rendered INSIDE the chat input — sits where the placeholder
+ * would, animated emoji + label + bouncing dots. Pointer-events: none
+ * so the user can still focus + type through it; vanishes the moment
+ * `input.value` becomes non-empty.
+ * ---------------------------------------------------------------------- */
+.strata-chat-input-wrap {
+  display: flex;
+  align-items: stretch;
+}
+.strata-chat-input-wrap .strata-chat-input {
+  flex: 1;
+}
+.strata-input-step {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ddd6fe;
+  /* Cap so a long step label can't overflow the send button. */
+  max-width: calc(100% - 28px);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.strata-input-step-emoji {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.7));
+  animation: strata-emoji-bob 1.6s ease-in-out infinite;
+}
+.strata-input-step-label {
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: strata-placeholder-shimmer 3s linear infinite;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.strata-input-step .strata-live-status-dots {
+  flex-shrink: 0;
+  color: #a78bfa;
+}

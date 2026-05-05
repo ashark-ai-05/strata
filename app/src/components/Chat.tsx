@@ -512,15 +512,10 @@ export function Chat() {
         )}
       </AnimatePresence>
 
-      {/* Composer status — sits inside the same border-t region as the
-          form so live progress + KB hits visually belong with the input
-          rather than floating above it. */}
+      {/* Composer status — only the KB-hit chip + popover lives here
+          now. The live step has moved INSIDE the input field (see
+          InputLiveOverlay below). */}
       <ComposerStatus
-        step={deriveStep({
-          isStreaming,
-          kbBusy,
-          messages: messages as Parameters<typeof deriveStep>[0]['messages'],
-        })}
         query={kbQuery}
         hits={kbHits}
         kbBusy={kbBusy}
@@ -544,15 +539,59 @@ export function Chat() {
         onSubmit={handleSubmit}
         className="px-3 py-3 flex gap-2 border-t border-white/5 bg-[var(--color-bg)]/95"
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={isStreaming || kbBusy ? '✨ Strata is working…' : '✨ Ask Strata anything…'}
-          disabled={isStreaming}
-          data-busy={isStreaming || kbBusy ? 'true' : 'false'}
-          className="strata-chat-input flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-bg-2)] border border-white/8 text-zinc-100 placeholder-zinc-500 text-[14px] focus:outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/15 transition-all disabled:opacity-50"
-        />
+        {(() => {
+          const liveStep = deriveStep({
+            isStreaming,
+            kbBusy,
+            messages: messages as Parameters<typeof deriveStep>[0]['messages'],
+          });
+          const showOverlay = !input.trim() && liveStep !== null;
+          return (
+            <div className="strata-chat-input-wrap flex-1 relative">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  showOverlay
+                    ? ''
+                    : '✨ Ask Strata anything…'
+                }
+                disabled={isStreaming}
+                data-busy={isStreaming || kbBusy ? 'true' : 'false'}
+                className="strata-chat-input w-full px-4 py-2.5 rounded-xl bg-[var(--color-bg-2)] border border-white/8 text-zinc-100 placeholder-zinc-500 text-[14px] focus:outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/15 transition-all disabled:opacity-50"
+              />
+              {/* Live step rendered INSIDE the input where the placeholder
+                  would otherwise be. Absolute-positioned over the input,
+                  pointer-events: none so the user can still focus + type
+                  through it. Hides the moment the user types anything,
+                  giving the live progress the prime spot in the UI. */}
+              <AnimatePresence mode="wait">
+                {showOverlay && liveStep && (
+                  <motion.div
+                    key={liveStep.key}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -2 }}
+                    transition={{ duration: 0.16 }}
+                    className="strata-input-step"
+                    aria-hidden
+                  >
+                    <span className="strata-input-step-emoji">
+                      {liveStep.emoji}
+                    </span>
+                    <span className="strata-input-step-label">
+                      {liveStep.label}
+                    </span>
+                    <span className="strata-live-status-dots">
+                      <span /><span /><span />
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
         {isStreaming ? (
           <button
             type="button"

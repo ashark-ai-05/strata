@@ -1,35 +1,24 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronUp, Plus, ExternalLink, Database, X } from 'lucide-react';
-import type { LiveStep } from './LiveStatus';
 import type { SearchResult } from '../api/search';
 
 /**
  * Composer status row — sits ABOVE the chat input inside the same form
- * container. Shows two glanceable chips while a turn is in flight:
- *
- *   1. Live step pill — driven by LiveStatus.deriveStep, animated emoji,
- *      bouncing dots, label like "📚 Searching your knowledge base".
- *   2. KB hit count chip — clickable; opens a popover with the top
- *      results. Each result has a "Place" button + (when applicable) an
- *      "Open" link.
+ * container. The live step is now rendered INSIDE the input field
+ * itself (see InputLiveOverlay in Chat.tsx), so this row hosts only
+ * the KB hit count chip + its expandable popover.
  *
  * The row only renders when there's something to show. When idle the
  * composer is a plain input — no leftover chrome.
- *
- * Spec: this folds the previous standalone KbHits panel + the floating
- * LiveStatus pill into one strip next to the input the user is typing
- * into.
  */
 export function ComposerStatus({
-  step,
   query,
   hits,
   kbBusy,
   onPlace,
   onDismissHits,
 }: {
-  step: LiveStep | null;
   query: string | null;
   hits: SearchResult[] | null;
   kbBusy: boolean;
@@ -38,37 +27,14 @@ export function ComposerStatus({
 }) {
   const [hitsOpen, setHitsOpen] = useState(false);
 
-  const showStep = step !== null;
   const hitCount = hits?.length ?? null;
   const showHitsChip =
     query !== null && (kbBusy || (hitCount !== null && hitCount > 0));
 
-  if (!showStep && !showHitsChip) return null;
+  if (!showHitsChip) return null;
 
   return (
     <div className="strata-composer-status-row">
-      {showStep && step && (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step.key}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -2 }}
-            transition={{ duration: 0.16 }}
-            className="strata-composer-step"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="strata-composer-step-emoji" aria-hidden>
-              {step.emoji}
-            </span>
-            <span className="strata-composer-step-label">{step.label}</span>
-            <span className="strata-live-status-dots" aria-hidden>
-              <span /><span /><span />
-            </span>
-          </motion.div>
-        </AnimatePresence>
-      )}
       {showHitsChip && (
         <button
           type="button"
