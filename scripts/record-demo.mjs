@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /**
- * Record a demo GIF of the OpenCanvas UI without a sudo-installed Chrome.
+ * Record a feature-rich demo GIF of the OpenCanvas UI without a
+ * sudo-installed Chrome.
  *
- * - Boots a Playwright `chromium-headless-shell` (already installed via
+ * - Boots Playwright's bundled chromium (already installed via
  *   `npx playwright install chromium`).
  * - Drives the running Vite app at http://127.0.0.1:3458.
- * - Uses tldraw's `editor` global (exposed by the editor-ref singleton)
- *   to programmatically place a small storyboard of widgets — this skips
- *   the LLM cost + non-determinism of a real chat turn.
- * - Captures a sequence of PNG frames.
- * - Stitches them into `docs/demo.gif` with the bundled ffmpeg-static
- *   binary (no system ffmpeg needed).
+ * - Imports state/editor-ref + canvas/dispatcher off Vite's dev module
+ *   graph so we can drive widget placement programmatically (skipping
+ *   the LLM cost of a real chat turn).
+ * - Drives the chat input + ui-store flags directly so the demo shows:
+ *     - the in-input live-step overlay (animated emoji + gradient label)
+ *     - the streaming gradient border on the input
+ *     - sequential widget placements with the fresh-place pop animation
+ *     - role-tinted hover glow on a placed card
+ *     - the live minimap updating bottom-left
+ *     - 6 different widget kinds covering the breadth of the surface
+ * - Captures ~28 PNG frames at 1280×800 @ 1.5x DPR.
+ * - Stitches with ffmpeg-static into docs/demo.gif at 6 fps for a ~5s
+ *   loop. palette-gen + paletteuse keeps colours clean.
  *
  * Run:
- *   pnpm dev               # in another terminal
+ *   pnpm dev              # in another terminal
  *   node scripts/record-demo.mjs
  */
 import { chromium } from 'playwright';
@@ -31,7 +39,8 @@ const APP_URL = 'http://127.0.0.1:3458/';
 const FFMPEG = (await import('ffmpeg-static')).default;
 const W = 1280;
 const H = 800;
-const FRAME_DELAY_MS = 800;
+const FPS = 6;
+const HOLD = 250; // ms between snaps within a beat
 
 async function ensureCleanFrames() {
   await mkdir(OUT_DIR, { recursive: true });
@@ -44,21 +53,20 @@ let frameNo = 0;
 async function snap(page, label) {
   const file = join(OUT_DIR, `frame-${String(++frameNo).padStart(3, '0')}.png`);
   await page.screenshot({ path: file, fullPage: false });
-  console.log(`[record-demo] ${label} → ${file}`);
+  console.log(`[demo] frame ${frameNo}: ${label}`);
   return file;
+}
+
+async function sleep(ms) {
+  await new Promise((r) => setTimeout(r, ms));
 }
 
 async function placeWidget(page, kind, role, payload) {
   await page.evaluate(
     ({ kind, role, payload }) => {
-      // Reach the singleton editor handle published by Canvas.tsx onMount.
-      // The store is exposed via window for the demo recorder; in normal
-      // operation the dispatcher is called from the chat side.
-      const w = window;
-      const editor = w.__opencanvasEditorForDemo__ ?? w.editor;
-      if (!editor) throw new Error('editor handle not available');
-      const dispatcher = w.__opencanvasDispatcher__;
-      if (!dispatcher) throw new Error('dispatcher not exposed');
+      const editor = window.__opencanvasEditorForDemo__;
+      const dispatcher = window.__opencanvasDispatcher__;
+      if (!editor || !dispatcher) throw new Error('demo hooks missing');
       const id = crypto.randomUUID();
       dispatcher(editor, { type: 'place', id, kind, role, payload }, 'ask-anything');
     },
@@ -66,73 +74,114 @@ async function placeWidget(page, kind, role, payload) {
   );
 }
 
+/**
+ * Toggle the ui-store flags that surface the live-step overlay so the
+ * recording shows what a real chat turn looks like — without the cost
+ * + non-determinism of actually calling the LLM.
+ */
+async function setBusy(page, busy) {
+  await page.evaluate((busy) => {
+    const ui = window.__opencanvasUiStore__;
+    if (!ui) return;
+    ui.getState().setChatBusy(busy);
+  }, busy);
+}
+
 async function main() {
   await ensureCleanFrames();
 
-  console.log('[record-demo] launching chromium-headless-shell …');
-  const browser = await chromium.launch({
-    headless: true,
-    channel: 'chromium', // bundled
-  });
+  console.log('[demo] launching chromium');
+  const browser = await chromium.launch({ headless: true, channel: 'chromium' });
   const context = await browser.newContext({
     viewport: { width: W, height: H },
-    deviceScaleFactor: 1.5, // crisper text in the gif
+    deviceScaleFactor: 1.5,
     colorScheme: 'dark',
+    // Reduce motion is OFF — we want the animations on.
   });
   const page = await context.newPage();
+  page.on('pageerror', (e) => console.error('[page-error]', e.message));
 
-  console.log('[record-demo] navigate', APP_URL);
+  console.log('[demo] navigate', APP_URL);
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
-
-  // Wait for the header to render (a signal that React has hydrated).
   await page.waitForSelector('header h1', { timeout: 30_000 });
 
-  // Expose editor + dispatcher on window so we can drive widget placement
-  // from the page. We do this by importing from Vite's dev module graph.
+  // Wire window hooks: editor handle + dispatcher + ui-store.
   await page.evaluate(async () => {
-    // Try a few attempts — Canvas may still be mounting on first call.
     const start = Date.now();
-    while (Date.now() - start < 10_000) {
+    while (Date.now() - start < 12_000) {
       try {
         const editorRef = await import('/src/state/editor-ref.ts');
         const dispatcherMod = await import('/src/canvas/dispatcher.ts');
+        const uiMod = await import('/src/state/ui-store.ts');
         const editor = editorRef.getEditor();
         if (editor) {
           window.__opencanvasEditorForDemo__ = editor;
           window.__opencanvasDispatcher__ = dispatcherMod.applyToolDirective;
-          return true;
+          window.__opencanvasUiStore__ = uiMod.useUiStore;
+          return;
         }
-      } catch (e) {
-        // module not ready yet
+      } catch {
+        /* canvas not ready yet */
       }
       await new Promise((r) => setTimeout(r, 200));
     }
-    throw new Error('editor handle never appeared');
+    throw new Error('editor never appeared');
   });
+  await sleep(400); // let initial paint settle
 
-  // ---- Storyboard ----
+  // ---------------------------------------------------------------
+  // Storyboard
+  // ---------------------------------------------------------------
+
+  // Frame 1-2 — empty canvas hero, idle composer.
   await snap(page, 'empty canvas');
+  await sleep(HOLD);
+  await snap(page, 'empty canvas (hold)');
 
-  // Fake-type into the chat composer for visual flair.
-  const composer = await page.$('input[placeholder]');
-  if (composer) {
-    await composer.click();
-    await composer.type('Compare REST vs gRPC', { delay: 40 });
+  // Focus the chat input + type a query character-by-character. While
+  // typing, the input has the focus glow + gradient ring; this is the
+  // "user is asking a question" beat.
+  const input = await page.$('.opencanvas-chat-input');
+  if (input) {
+    await input.focus();
+    await sleep(150);
+    await snap(page, 'composer focused');
+    const text = 'Compare REST vs gRPC for our user service';
+    for (let i = 0; i < text.length; i += 4) {
+      await input.type(text.slice(i, i + 4), { delay: 0 });
+      if (i % 16 === 0) await snap(page, `typing "${text.slice(0, i + 4)}"`);
+    }
+    await snap(page, 'typed: full query');
+    await sleep(HOLD);
+    // Clear the input — the act of "submitting" without actually firing
+    // a chat turn (we don't want to spend tokens on a demo).
+    await page.evaluate(() => {
+      const el = document.querySelector('.opencanvas-chat-input');
+      if (!(el instanceof HTMLInputElement)) return;
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      setter?.call(el, '');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await sleep(150);
+    await snap(page, 'submitted');
   }
-  await snap(page, 'chat with question');
 
-  // Place a markdown widget (primary).
+  // Place the first widget — shows the fresh-place pop animation
+  // (scale-in with overshoot + role-tinted left edge stripe).
   await placeWidget(page, 'markdown', 'primary', {
     title: 'REST vs gRPC',
     body:
-      '**REST** uses HTTP/1.1 + JSON. Human-readable, ubiquitous tooling, ' +
-      'caches well. **gRPC** uses HTTP/2 + Protobuf. Smaller payloads, ' +
-      'streaming bidirectionally, strong contract via .proto files.',
+      "**REST** uses HTTP/1.1 + JSON. Human-readable, ubiquitous tooling, " +
+      "caches well.\n\n**gRPC** uses HTTP/2 + Protobuf. Smaller payloads, " +
+      "bidirectional streaming, strong contract via .proto files.",
   });
-  await new Promise((r) => setTimeout(r, FRAME_DELAY_MS));
-  await snap(page, '+markdown');
+  await sleep(HOLD);
+  await snap(page, '+ markdown (primary)');
 
-  // Add a comparison table (detail).
+  // Place the comparison table — blue accent (detail role).
   await placeWidget(page, 'table', 'detail', {
     title: 'Side-by-side',
     columns: [
@@ -143,15 +192,15 @@ async function main() {
     rows: [
       ['Wire format', 'JSON', 'Protobuf'],
       ['Transport', 'HTTP/1.1', 'HTTP/2'],
-      ['Streaming', 'SSE / WebSocket', 'native bidi'],
+      ['Streaming', 'SSE / WS', 'native bidi'],
       ['Browser', 'first-class', 'gRPC-Web'],
       ['Tooling', 'curl, Postman', 'protoc, Bloom'],
     ],
   });
-  await new Promise((r) => setTimeout(r, FRAME_DELAY_MS));
-  await snap(page, '+table');
+  await sleep(HOLD);
+  await snap(page, '+ table (detail)');
 
-  // Add a code block (related).
+  // Code-block — teal accent (related role).
   await placeWidget(page, 'code-block', 'related', {
     title: 'gRPC service definition',
     language: 'proto',
@@ -166,23 +215,120 @@ async function main() {
       '  string email = 3;\n' +
       '}',
   });
-  await new Promise((r) => setTimeout(r, FRAME_DELAY_MS));
-  await snap(page, '+code');
+  await sleep(HOLD);
+  await snap(page, '+ code-block (related)');
 
-  // Final "all placed" hold for an extra beat.
-  await new Promise((r) => setTimeout(r, FRAME_DELAY_MS * 2));
-  await snap(page, 'final');
+  // Ticket — amber accent (reference).
+  await placeWidget(page, 'ticket', 'reference', {
+    ticketId: 'API-482',
+    title: 'Migrate /users to gRPC',
+    status: 'In Progress',
+    assignee: 'platform',
+    priority: 'High',
+    description: 'Rolling cutover with feature flag; REST stays for one quarter.',
+  });
+  await sleep(HOLD);
+  await snap(page, '+ ticket (reference)');
+
+  // Tasks — rose accent (timeline).
+  await placeWidget(page, 'tasks', 'timeline', {
+    title: 'Migration checklist',
+    items: [
+      { text: 'Define .proto contract', done: true },
+      { text: 'Generate clients (TS, Go, Java)', done: true },
+      { text: 'Dual-publish for one release', done: false },
+      { text: 'Cut traffic 10% → 100%', done: false },
+      { text: 'Decommission REST endpoints', done: false },
+    ],
+  });
+  await sleep(HOLD);
+  await snap(page, '+ tasks (timeline)');
+
+  // Sticky note — emerald accent (node).
+  await placeWidget(page, 'sticky-note', 'node', {
+    body: 'Watch out for keep-alive\nmismatch with the existing\nload balancer!',
+    author: 'rita',
+    colour: 'yellow',
+  });
+  await sleep(HOLD);
+  await snap(page, '+ sticky-note (node)');
+
+  // Hold on the full canvas for a beat so the loop feels resolved.
+  await sleep(HOLD * 2);
+  await snap(page, 'full canvas (hold)');
+
+  // Hover the first widget to trigger its role-tinted glow + hover-action chrome.
+  await page.evaluate(() => {
+    const card = document.querySelector('.opencanvas-card[data-role="primary"]');
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    const ev = new MouseEvent('mouseover', {
+      bubbles: true,
+      cancelable: true,
+      clientX: r.left + r.width / 2,
+      clientY: r.top + r.height / 2,
+    });
+    card.dispatchEvent(ev);
+  });
+  await page.mouse.move(W / 2 - 200, 280);
+  await sleep(HOLD);
+  await snap(page, 'hover primary');
+  await sleep(HOLD);
+  await snap(page, 'hover (hold)');
+
+  // Add a kanban board for variety (violet accent, primary role).
+  await placeWidget(page, 'kanban', 'primary', {
+    title: 'Migration board',
+    columns: [
+      {
+        name: 'To do',
+        colour: 'neutral',
+        cards: [
+          { title: 'Decommission REST endpoints' },
+          { title: 'Rewrite client SDK docs' },
+        ],
+      },
+      {
+        name: 'Doing',
+        colour: 'amber',
+        cards: [
+          { title: 'Roll out to 10% traffic', priority: 'High' },
+          { title: 'Update load-balancer keep-alive' },
+        ],
+      },
+      {
+        name: 'Done',
+        colour: 'green',
+        cards: [
+          { title: 'Define .proto contract' },
+          { title: 'Generate clients (TS, Go)' },
+        ],
+      },
+    ],
+  });
+  await sleep(HOLD);
+  await snap(page, '+ kanban (primary)');
+
+  // Drop the busy flag — overlay vanishes, UI is back to idle on a populated canvas.
+  await setBusy(page, false);
+  await sleep(HOLD);
+  await snap(page, 'idle, populated');
+  await sleep(HOLD);
+  await snap(page, 'final hero');
 
   await browser.close();
 
-  // ---- Stitch with ffmpeg-static ----
-  console.log('[record-demo] stitching →', GIF_PATH);
+  // ---- Stitch ----
+  console.log('[demo] stitching →', GIF_PATH);
   await new Promise((res, rej) => {
     const args = [
       '-y',
-      '-framerate', '1.6', // ~600ms per frame
+      '-framerate', String(FPS),
       '-i', join(OUT_DIR, 'frame-%03d.png'),
-      '-vf', 'scale=900:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4',
+      // Two-pass palettegen for clean colours; scale to 960px wide so
+      // the gif is still crisp but smaller than the raw 1920px capture.
+      '-vf',
+      'scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4',
       '-loop', '0',
       GIF_PATH,
     ];
@@ -193,7 +339,7 @@ async function main() {
   });
 
   if (!existsSync(GIF_PATH)) throw new Error('demo.gif not produced');
-  console.log('[record-demo] done →', GIF_PATH);
+  console.log('[demo] done →', GIF_PATH);
 }
 
 main().catch((err) => {
