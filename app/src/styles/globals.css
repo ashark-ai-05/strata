@@ -1897,19 +1897,23 @@ header button:hover {
   flex: 1;
 }
 .strata-input-step {
+  /* Stretch to the input's full content box and use flex centering so
+     the mixed-size children (16px emoji + 14px label + dots) all share
+     the input's vertical baseline. No manual translateY math, no
+     padding drift between this overlay and the placeholder it replaces.
+     padding-inline mirrors the input's px-4 (= 16px) so the first
+     character of the label sits exactly where the user's cursor would. */
   position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
+  inset: 0;
+  padding: 0 16px;
+  display: flex;
   align-items: center;
   gap: 8px;
   pointer-events: none;
   font-size: 14px;
+  line-height: 1;
   font-weight: 500;
   color: #ddd6fe;
-  /* Cap so a long step label can't overflow the send button. */
-  max-width: calc(100% - 28px);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -1917,20 +1921,32 @@ header button:hover {
   font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
+  /* Pull the emoji's optical centre back to the inline-flex baseline.
+     System emoji glyphs draw a couple of px below the bounding-box
+     centre; this nudge balances them with the 14px label text. */
+  margin-top: -1px;
   filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.7));
   animation: strata-emoji-bob 1.6s ease-in-out infinite;
 }
 .strata-input-step-label {
+  /* Match the input's typography exactly. line-height: 1.2 gives the
+     gradient-clipped text room without breaking flex centering (the
+     parent's line-height: 1 still drives the box height). */
+  font-size: 14px;
+  line-height: 1.2;
   background: var(--grad-brand);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   background-size: 200% 100%;
   animation: strata-placeholder-shimmer 3s linear infinite;
+  min-width: 0;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 .strata-input-step .strata-live-status-dots {
   flex-shrink: 0;
   color: #a78bfa;
+  display: inline-flex;
+  align-items: center;
 }
