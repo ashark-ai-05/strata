@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   WIDGET_KINDS,
+  COMPOSITE_SECTION_KINDS,
   ROLES,
   TEMPLATE_IDS,
   type ToolDirective,
 } from '../../src/agent/types.js';
 
 describe('agent/types', () => {
-  it('WIDGET_KINDS contains the 8 registered kinds (5 from Plan 4c + 3 from Phase 4)', () => {
+  it('WIDGET_KINDS contains all 12 registered kinds', () => {
     expect([...WIDGET_KINDS]).toEqual([
       'markdown',
       'code-block',
@@ -17,7 +18,16 @@ describe('agent/types', () => {
       'table',
       'timeline',
       'file-tree',
+      'composite',
+      'tasks',
+      'kanban',
+      'sticky-note',
     ]);
+  });
+
+  it('COMPOSITE_SECTION_KINDS excludes composite (no nesting)', () => {
+    expect(COMPOSITE_SECTION_KINDS).not.toContain('composite');
+    expect(COMPOSITE_SECTION_KINDS.length).toBe(WIDGET_KINDS.length - 1);
   });
 
   it('ROLES enumerates 6 logical roles', () => {
@@ -31,7 +41,7 @@ describe('agent/types', () => {
     ]);
   });
 
-  it('TEMPLATE_IDS matches the 4 templates from Plan 4e', () => {
+  it('TEMPLATE_IDS matches the 4 canvas templates', () => {
     expect([...TEMPLATE_IDS]).toEqual([
       'ask-anything',
       'tell-me-about-x',
@@ -41,12 +51,19 @@ describe('agent/types', () => {
   });
 
   it('ToolDirective discriminates on `type` — exhaustive switch must compile', () => {
-    // Compile-time check: a switch with all 5 variants narrows correctly to
-    // `never` in the default branch. If a variant is added or its discriminant
-    // changes, this stops compiling and the test breaks the build.
     const directives: ToolDirective[] = [
-      { type: 'place', id: 'w-1', kind: 'markdown', role: 'primary',
-        payload: { title: 't', body: 'b' } },
+      {
+        type: 'place',
+        id: 'w-1',
+        kind: 'markdown',
+        role: 'primary',
+        payload: { title: 't', body: 'b' },
+      },
+      {
+        type: 'update',
+        id: 'w-1',
+        payload: { body: 'updated' },
+      },
       { type: 'link', linkId: 'l-1', fromId: 'w-1', toId: 'w-2' },
       { type: 'focus', id: 'w-1' },
       { type: 'clear' },
@@ -55,11 +72,24 @@ describe('agent/types', () => {
     const seen = new Set<string>();
     for (const d of directives) {
       switch (d.type) {
-        case 'place': seen.add('place'); break;
-        case 'link': seen.add('link'); break;
-        case 'focus': seen.add('focus'); break;
-        case 'clear': seen.add('clear'); break;
-        case 'switchTemplate': seen.add('switchTemplate'); break;
+        case 'place':
+          seen.add('place');
+          break;
+        case 'update':
+          seen.add('update');
+          break;
+        case 'link':
+          seen.add('link');
+          break;
+        case 'focus':
+          seen.add('focus');
+          break;
+        case 'clear':
+          seen.add('clear');
+          break;
+        case 'switchTemplate':
+          seen.add('switchTemplate');
+          break;
         default: {
           // Exhaustiveness: `d` is `never` here. Build fails if a variant
           // is added without a case branch.
@@ -68,6 +98,6 @@ describe('agent/types', () => {
         }
       }
     }
-    expect(seen.size).toBe(5);
+    expect(seen.size).toBe(6);
   });
 });

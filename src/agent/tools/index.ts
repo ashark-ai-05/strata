@@ -1,6 +1,7 @@
 import { searchKbTool } from './search-kb.js';
 import { fetchResultTool } from './fetch-result.js';
 import { placeWidgetTool } from './place-widget.js';
+import { updateWidgetTool } from './update-widget.js';
 import { readCanvasTool } from './read-canvas.js';
 import { readWidgetTool } from './read-widget.js';
 import { focusWidgetTool } from './focus-widget.js';
@@ -12,7 +13,11 @@ import type { CanvasSnapshot } from '../canvas-snapshot.js';
 
 export interface AgentToolDeps {
   search: {
-    search(query: string, limit: number): Promise<
+    search(
+      query: string,
+      limit: number,
+      options?: { project?: string },
+    ): Promise<
       Array<{
         id: string;
         kind: string;
@@ -35,8 +40,10 @@ export interface AgentToolDeps {
 }
 
 /**
- * Build the array of agent tools for one chat turn (10 tools).
+ * Build the array of agent tools for one chat turn (11 tools).
  * Called per-turn so closures (search service, snapshot getter) are fresh.
+ *
+ * Spec: REPLICATION-PROMPT.md §11.
  */
 export function buildAgentTools(deps: AgentToolDeps) {
   return [
@@ -44,6 +51,7 @@ export function buildAgentTools(deps: AgentToolDeps) {
     fetchResultTool(deps.search),
     webSearchTool(deps.webSearch),
     placeWidgetTool(),
+    updateWidgetTool(deps.getSnapshot),
     readCanvasTool(deps.getSnapshot),
     readWidgetTool(deps.getSnapshot),
     focusWidgetTool(),

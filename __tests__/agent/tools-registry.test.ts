@@ -15,7 +15,7 @@ const emptySnap: CanvasSnapshot = {
 };
 
 describe('buildAgentTools', () => {
-  it('returns the 10 tools in declared order', () => {
+  it('returns the 11 tools in declared order', () => {
     const tools = buildAgentTools({
       search: fakeSearch,
       webSearch: fakeWebSearch,
@@ -26,6 +26,7 @@ describe('buildAgentTools', () => {
       'fetch_result',
       'web_search',
       'place_widget',
+      'update_widget',
       'read_canvas',
       'read_widget',
       'focus_widget',

@@ -51,6 +51,26 @@ const FILE_TREE: Widget = {
   acceptsKinds: [],
   shapeType: 'strata:file-tree',
 };
+const COMPOSITE: Widget = {
+  id: 'composite',
+  acceptsKinds: [],
+  shapeType: 'strata:composite',
+};
+const TASKS: Widget = {
+  id: 'tasks',
+  acceptsKinds: [],
+  shapeType: 'strata:tasks',
+};
+const KANBAN: Widget = {
+  id: 'kanban',
+  acceptsKinds: [],
+  shapeType: 'strata:kanban',
+};
+const STICKY_NOTE: Widget = {
+  id: 'sticky-note',
+  acceptsKinds: [],
+  shapeType: 'strata:sticky-note',
+};
 
 /**
  * Static map from ResultKind → Widget. Plan 4d's dispatcher uses this to
@@ -89,6 +109,10 @@ export const ALL_WIDGETS: Widget[] = [
   TABLE,
   TIMELINE,
   FILE_TREE,
+  COMPOSITE,
+  TASKS,
+  KANBAN,
+  STICKY_NOTE,
 ];
 
 /**

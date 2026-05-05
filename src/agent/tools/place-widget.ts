@@ -6,7 +6,7 @@ import { validatePayloadForKind } from '../payloads.js';
 import type { WithArgs } from './_shared.js';
 
 const inputShape = {
-  kind: z.enum(WIDGET_KINDS).describe('widget kind'),
+  kind: z.enum(WIDGET_KINDS).describe('widget kind (one of the 12 registered kinds)'),
   role: z.enum(ROLES).describe('logical placement role'),
   payload: z
     .record(z.string(), z.unknown())
@@ -26,15 +26,21 @@ export function placeWidgetTool(): PlaceWidgetToolDef {
     'place_widget',
     `Place a widget on the canvas at the role's slot in the active template.
 
+Every payload accepts optional \`source\` (single canonical origin) AND \`sources\` (array of {url, label?} for multi-attribution).
+
 Payload schema per kind (use these field names exactly):
-  - markdown:        { title: string, body: string }
-  - code-block:      { title: string, language: string, code: string, source?: string }
-  - ticket:          { ticketId: string, title: string, status: string, assignee?: string, priority?: string }
-  - web-embed:       { title: string, url: string, snippet?: string }
-  - key-value-card:  { title: string, fields: [{ key: string, value: string }] }
-  - table:           { title: string, columns: [{ key, label?, align?: left|right|center, mono?: bool }], rows: string[][] }
-  - timeline:        { title: string, events: [{ timestamp: string, label: string, body?: string, kind?: commit|deploy|incident|note|release }] }
-  - file-tree:       { title: string, root: { name: string, type: file|directory, children?: [...], meta?: string } }`,
+  - markdown        { title, body }
+  - code-block      { title, language, code }
+  - ticket          { ticketId, title, status, assignee?, priority?, description? }
+  - web-embed       { title, url, snippet? }
+  - key-value-card  { title, fields: [{ key, value, url? }] }
+  - table           { title, columns: [{ key, label?, align?: left|right|center, mono?: bool }], rows: string[][], rowLinks?: (url|null)[] }
+  - timeline        { title, events: [{ timestamp, label, body?, kind?, url? }] }
+  - file-tree       { title, root: { name, type: file|directory, children?, meta?, url? } }
+  - tasks           { title, items: [{ id?, text, done?, assignee?, due?, priority?, url? }] }
+  - kanban          { title, columns: [{ id?, name, colour?: neutral|blue|amber|green|rose|violet, cards: [{ id?, title, body?, assignee?, priority?, tag?, url? }] }] }
+  - sticky-note     { body, author?, colour?: yellow|pink|blue|green|violet|orange }
+  - composite       { title, sections: [{ heading?, kind: <any non-composite kind>, payload }] } — ONE card with multiple typed sections; cannot nest composite`,
     inputShape,
     async (args) => {
       try {
