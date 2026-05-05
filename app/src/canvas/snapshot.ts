@@ -14,6 +14,14 @@ const SHAPE_TO_KIND: Record<string, WidgetKind> = {
   'strata:table': 'table',
   'strata:timeline': 'timeline',
   'strata:file-tree': 'file-tree',
+  // Phase 5 — composite + interactive widgets. Without these the snapshot
+  // would silently drop newly-placed cards, widgetCount would stay at 0,
+  // and EmptyCanvasHint would keep showing even after the agent placed a
+  // composite / tasks / kanban / sticky-note widget.
+  'strata:composite': 'composite',
+  'strata:tasks': 'tasks',
+  'strata:kanban': 'kanban',
+  'strata:sticky-note': 'sticky-note',
 };
 
 export type CanvasSnapshotShape = {

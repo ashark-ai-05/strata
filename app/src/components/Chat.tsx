@@ -11,6 +11,8 @@ import { useTemplateStore } from '../state/template-store';
 import { collectAppliedToolCallIds } from './chat-persistence';
 import { suggestCommands, tryRunCommand } from './slash-commands';
 import { TeamProgress, TeamHandoff } from './TeamProgress';
+import { search as searchKb, type SearchResult } from '../api/search';
+import { KbHits } from './KbHits';
 import { useChatActions } from '../state/chat-actions-store';
 import { useConversationsStore } from '../state/conversations-store';
 import { useKbStats } from '../state/kb-stats-store';
@@ -165,6 +167,25 @@ export function Chat() {
   });
   const [input, setInput] = useState('');
   const isStreaming = status === 'streaming' || status === 'submitted';
+
+  // Parallel KB search: every chat submit also fires `/v1/search` so we
+  // can show the user the raw hits the agent will reason over. The agent
+  // still runs its own `search_kb` tool with semantic-variant queries —
+  // this is a UX layer on top of the SAME index, not a duplicate query
+  // path. Falls back silently on backend errors.
+  const [kbHits, setKbHits] = useState<SearchResult[] | null>(null);
+  const [kbBusy, setKbBusy] = useState(false);
+  const [kbQuery, setKbQuery] = useState<string | null>(null);
+  const kbSearch = (query: string) => {
+    const q = query.trim();
+    if (!q) return;
+    setKbBusy(true);
+    setKbQuery(q);
+    searchKb(q, 5)
+      .then((r) => setKbHits(r.results))
+      .catch(() => setKbHits([]))
+      .finally(() => setKbBusy(false));
+  };
   // Mirror streaming state into ui-store so the floating chat title bar
   // and composer status pill can react without prop drilling.
   useEffect(() => {
@@ -241,6 +262,7 @@ export function Chat() {
       setInput('');
       return;
     }
+    kbSearch(input);
     sendMessage({ text: input });
     setInput('');
   };
@@ -273,6 +295,7 @@ export function Chat() {
   const setSendTeam = useChatActions((s) => s.setSendTeam);
   useEffect(() => {
     setSendTeam((text: string) => {
+      kbSearch(text);
       sendMessage({ text }, { metadata: { route: 'team' } });
     });
     return () => setSendTeam(null);
@@ -418,6 +441,31 @@ export function Chat() {
           </motion.div>
         )}
       </div>
+
+      {/* KB hits — every chat submit fires `/v1/search` in parallel and
+          shows the top hits inline. The agent runs its own `search_kb`
+          tool with semantic-variant queries against the SAME index; this
+          panel is the user-facing view. Click a hit to drop a widget on
+          the canvas. */}
+      <KbHits
+        query={kbQuery}
+        hits={kbHits}
+        busy={kbBusy}
+        onPlace={(hit) => {
+          const editor = getEditor();
+          if (!editor) return;
+          import('../canvas/dispatcher')
+            .then((m) => m.placeResultsOnCanvas(editor, [hit]))
+            .catch((e) => {
+              console.error('[chat] place from KB failed:', e);
+              toast.error('Could not place from KB');
+            });
+        }}
+        onDismiss={() => {
+          setKbHits(null);
+          setKbQuery(null);
+        }}
+      />
 
       {/* Slash-command suggestion popover. Sits above the form. */}
       <AnimatePresence>

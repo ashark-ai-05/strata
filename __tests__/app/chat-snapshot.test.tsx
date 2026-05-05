@@ -32,9 +32,17 @@ describe('Chat sends canvasSnapshot', () => {
     const form = container.querySelector('form') as HTMLFormElement;
     fireEvent.submit(form);
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const init = fetchMock.mock.calls[0]![1] as RequestInit;
-    const body = JSON.parse(init.body as string);
+    // Chat now also fires /v1/search in parallel (KB hits panel) — filter
+    // for the /v1/chat request specifically.
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/chat')),
+      ).toBe(true),
+    );
+    const chatCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/v1/chat'),
+    )!;
+    const body = JSON.parse((chatCall[1] as RequestInit).body as string);
     expect(body.canvasSnapshot).toBeDefined();
     expect(body.canvasSnapshot.activeTemplateId).toBe('ask-anything');
     expect(Array.isArray(body.canvasSnapshot.widgets)).toBe(true);
@@ -62,8 +70,15 @@ describe('Chat sends canvasSnapshot', () => {
     const form = container.querySelector('form') as HTMLFormElement;
     fireEvent.submit(form);
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some((c) => String(c[0]).includes('/v1/chat')),
+      ).toBe(true),
+    );
+    const chatCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/v1/chat'),
+    )!;
+    const body = JSON.parse((chatCall[1] as RequestInit).body as string);
     expect(body.canvasSnapshot.activeTemplateId).toBe('tell-me-about-x');
     expect(body.canvasSnapshot.widgets).toHaveLength(1);
   });

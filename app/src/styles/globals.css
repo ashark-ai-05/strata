@@ -890,3 +890,151 @@
   border-color: rgba(167, 139, 250, 0.4);
   color: #fafafa;
 }
+
+/* ----------------------------------------------------------------------
+ * KB hits panel — surfaces the parallel /v1/search results above the
+ * chat composer. Glass background, role-tinted accent, dense rows.
+ * ---------------------------------------------------------------------- */
+.strata-kb-hits {
+  position: relative;
+  margin: 6px 12px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.05);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: var(--color-fg-2);
+}
+.strata-kb-hits-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+  color: #ddd6fe;
+}
+.strata-kb-hits-label {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.strata-kb-hits-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+.strata-kb-hits-dismiss:hover {
+  color: var(--color-fg);
+  background: rgba(255, 255, 255, 0.06);
+}
+.strata-kb-hits-empty {
+  padding: 4px 2px;
+  color: var(--color-muted);
+  font-size: 11.5px;
+}
+.strata-kb-hits-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.strata-kb-hits-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.strata-kb-hits-row:hover {
+  border-color: rgba(167, 139, 250, 0.32);
+  background: rgba(167, 139, 250, 0.08);
+}
+.strata-kb-hits-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.strata-kb-hits-row-kind {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+.strata-kb-hits-row-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.strata-kb-hits-row-snippet {
+  font-size: 11.5px;
+  color: var(--color-fg-2);
+  line-height: 1.45;
+  /* Clamp to two lines so a long body doesn't blow the panel up. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.strata-kb-hits-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.strata-kb-hits-row-actions button,
+.strata-kb-hits-row-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-fg-2);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.strata-kb-hits-row-actions button:hover,
+.strata-kb-hits-row-actions a:hover {
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #fafafa;
+}
+.strata-kb-hits-row-source {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50%;
+}

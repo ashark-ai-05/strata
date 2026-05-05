@@ -25,7 +25,6 @@ import { setEditor } from '../state/editor-ref';
 import { useTemplateStore } from '../state/template-store';
 import { useCanvasStats } from '../state/canvas-stats-store';
 import { useConversationsStore } from '../state/conversations-store';
-import { DebugToolbar } from '../components/DebugToolbar';
 import { SearchBar } from '../components/SearchBar';
 import { TemplatePicker } from '../components/TemplatePicker';
 import { EmptyCanvasHint } from '../components/EmptyCanvasHint';
@@ -126,7 +125,6 @@ export function Canvas() {
         components={tldrawUiComponents}
       >
         <ToolsBridge />
-        <DebugToolbar />
         <SearchBar />
         <TemplatePicker />
         <EmptyCanvasHint />
