@@ -25,8 +25,10 @@ import { setEditor } from '../state/editor-ref';
 import { useTemplateStore } from '../state/template-store';
 import { useCanvasStats } from '../state/canvas-stats-store';
 import { useConversationsStore } from '../state/conversations-store';
-import { SearchBar } from '../components/SearchBar';
-import { TemplatePicker } from '../components/TemplatePicker';
+// SearchBar + TemplatePicker removed: all searches now flow through the
+// floating chat (the agent runs search_kb, plus a parallel /v1/search
+// call surfaces inline KB hits via <KbHits />). Templates are switched
+// via the /template slash command.
 import { EmptyCanvasHint } from '../components/EmptyCanvasHint';
 
 const customShapeUtils = [
@@ -125,8 +127,6 @@ export function Canvas() {
         components={tldrawUiComponents}
       >
         <ToolsBridge />
-        <SearchBar />
-        <TemplatePicker />
         <EmptyCanvasHint />
       </Tldraw>
       <CanvasMap />
