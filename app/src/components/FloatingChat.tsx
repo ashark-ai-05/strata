@@ -105,8 +105,14 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
           if ((e.target as HTMLElement).closest('button')) return;
           dragControls.start(e);
         }}
-        onDoubleClick={() => {
-          // Double-click resets position to (0, 0) — easy escape if the
+        onDoubleClick={(e) => {
+          // Skip the position-reset when the user is rapid-clicking
+          // one of the title-bar buttons (minimize / maximize / close
+          // / options menu). Without this guard, two quick clicks on
+          // a button bubble up here as a double-click and teleport
+          // the chat back to the bottom-right anchor mid-toggle.
+          if ((e.target as HTMLElement).closest('button')) return;
+          // Otherwise: reset position to (0, 0) — easy escape if the
           // chat ends up off-screen on a multi-monitor setup.
           x.set(0);
           y.set(0);
@@ -123,7 +129,14 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
             type="button"
             className="strata-chat-titlebar-btn"
             title={chatWindow.fullMode === 'full' ? 'Restore size' : 'Expand'}
-            onClick={toggleFullMode}
+            // stopPropagation so rapid clicks don't bubble up to the
+            // title bar's pointer-down (drag start) or onDoubleClick
+            // (position reset) handlers.
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFullMode();
+            }}
           >
             {chatWindow.fullMode === 'full' ? (
               <Minimize2 className="size-3.5" />
@@ -135,11 +148,13 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
             type="button"
             className="strata-chat-titlebar-btn"
             title={chatWindow.mode === 'minimized' ? 'Expand' : 'Minimize'}
-            onClick={() =>
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               setChatWindow({
                 mode: chatWindow.mode === 'minimized' ? 'open' : 'minimized',
-              })
-            }
+              });
+            }}
           >
             <Minus className="size-3.5" />
           </button>
@@ -148,7 +163,11 @@ export function FloatingChat({ chatKey }: { chatKey: string }) {
             className="strata-chat-titlebar-btn"
             data-danger="true"
             title="Hide chat (launcher bubble stays)"
-            onClick={() => setChatWindow({ mode: 'collapsed' })}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setChatWindow({ mode: 'collapsed' });
+            }}
           >
             <X className="size-3.5" />
           </button>

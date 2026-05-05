@@ -591,12 +591,18 @@
     0 0 0 1px rgba(167, 139, 250, 0.05) inset;
   transition: width 200ms ease, height 200ms ease, border-color 240ms ease;
 }
-.strata-chat-floating[data-mode='minimized'] {
-  height: 48px;
-}
 .strata-chat-floating[data-fullmode='full'] {
   width: min(720px, 92vw);
   height: min(80vh, 800px);
+}
+/* Minimized must win the height race against [data-fullmode='full']
+   regardless of source order. Compound selector pushes specificity to
+   (0, 2, 1) so a minimized full-mode panel still collapses to 48px
+   instead of rendering as a tall empty title-bar panel. */
+.strata-chat-floating[data-mode='minimized'],
+.strata-chat-floating[data-mode='minimized'][data-fullmode='full'],
+.strata-chat-floating[data-mode='minimized'][data-fullmode='normal'] {
+  height: 48px;
 }
 .strata-chat-floating[data-streaming='true'] {
   border-color: rgba(167, 139, 250, 0.34);
