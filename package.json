@@ -55,7 +55,7 @@
     "tldraw": "^3.0.0",
     "tree-sitter-typescript": "^0.23.0",
     "web-tree-sitter": "^0.24.0",
-    "xlsx": "^0.18.0",
+    "xlsx": "npm:@e965/xlsx@^0.20.3",
     "yaml": "^2.8.3",
     "zod": "*",
     "zustand": "^5.0.0"
@@ -72,8 +72,8 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^9.0.0",
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0",
+    "electron": "^39.8.5",
+    "electron-builder": "^26.0.0",
     "jsdom": "^25.0.0",
     "tailwindcss": "^4.0.0",
     "tsx": "*",
@@ -89,7 +89,11 @@
       "protobufjs",
       "sharp",
       "electron"
-    ]
+    ],
+    "overrides": {
+      "tar": "^7.5.11",
+      "@tootallnate/once": "^3.0.1"
+    }
   },
   "build": {
     "appId": "com.strata.app",
