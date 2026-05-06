@@ -26,6 +26,13 @@ export type TableShape = TLBaseShape<
     title: string;
     columns: Column[];
     rows: string[][];
+    /**
+     * Optional row-level URLs from the agent payload schema (TablePayload).
+     * Same length as rows[]; null entries skip linking. Declared on the
+     * shape props so tldraw's validator accepts the directive payload —
+     * the dispatcher passes payload through verbatim.
+     */
+    rowLinks?: Array<string | null>;
     uri?: string;
     source?: string;
     sources?: SourcePill[];
@@ -48,6 +55,7 @@ export class TableShapeUtil extends ShapeUtil<TableShape> {
       }),
     ),
     rows: T.arrayOf(T.arrayOf(T.string)),
+    rowLinks: T.optional(T.any),
     uri: T.optional(T.string),
     source: T.optional(T.string),
     sources: T.optional(T.any),
