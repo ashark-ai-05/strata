@@ -1,12 +1,24 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
-import { WIDGET_KINDS, ROLES } from '../types.js';
+import { WIDGET_KINDS, ROLES, type WidgetKind } from '../types.js';
 import { validatePayloadForKind } from '../payloads.js';
+import { classifyToGeneric } from '../classifier.js';
 import type { WithArgs } from './_shared.js';
 
 const inputShape = {
-  kind: z.enum(WIDGET_KINDS).describe('widget kind (one of the 12 registered kinds)'),
+  /**
+   * `kind` is intentionally `z.string()` (not z.enum) so the agent can
+   * attempt unknown kinds — the tool gracefully auto-classifies them
+   * into a `generic` widget instead of erroring. This also makes room
+   * for future MCP-registered kinds without re-deploying.
+   */
+  kind: z
+    .string()
+    .describe(
+      'widget kind — one of the registered kinds, or any string (unknown ' +
+        "kinds auto-classify to 'generic' with typed blocks)",
+    ),
   role: z.enum(ROLES).describe('logical placement role'),
   payload: z
     .record(z.string(), z.unknown())
@@ -14,7 +26,7 @@ const inputShape = {
 };
 
 type Args = {
-  kind: (typeof WIDGET_KINDS)[number];
+  kind: string;
   role: (typeof ROLES)[number];
   payload: Record<string, unknown>;
 };
@@ -40,33 +52,85 @@ Payload schema per kind (use these field names exactly):
   - tasks           { title, items: [{ id?, text, done?, assignee?, due?, priority?, url? }] }
   - kanban          { title, columns: [{ id?, name, colour?: neutral|blue|amber|green|rose|violet, cards: [{ id?, title, body?, assignee?, priority?, tag?, url? }] }] }
   - sticky-note     { body, author?, colour?: yellow|pink|blue|green|violet|orange }
-  - composite       { title, sections: [{ heading?, kind: <any non-composite kind>, payload }] } — ONE card with multiple typed sections; cannot nest composite`,
+  - composite       { title, sections: [{ heading?, kind: <any non-composite kind>, payload }] } — ONE card with multiple typed sections; cannot nest composite
+  - generic         { title, subtitle?, blocks: [{ type: 'markdown'|'table'|'kv'|'embed'|'json', ... }] } — universal fallback. Use when no specialized kind fits; compose blocks like Notion sections.
+
+When you pass an unknown kind or a payload that doesn't validate, the tool auto-classifies into 'generic' with the closest-fit blocks (and a JSON fallback if nothing matches). Errors are never silent — the directive surfaces what was reformatted.`,
     inputShape,
     async (args) => {
-      try {
-        const validated = validatePayloadForKind(args.kind, args.payload);
-        const id = randomUUID();
-        const directive = {
-          type: 'place' as const,
-          id,
-          kind: args.kind,
-          role: args.role,
-          payload: validated,
-        };
-        return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify({ ok: true, id, directive }) },
-          ],
-        };
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        return {
-          content: [
-            { type: 'text' as const, text: `Invalid payload for kind=${args.kind}: ${message}` },
-          ],
-          isError: true,
-        };
+      const id = randomUUID();
+      const knownKind = (WIDGET_KINDS as readonly string[]).includes(args.kind)
+        ? (args.kind as WidgetKind)
+        : null;
+
+      if (knownKind) {
+        try {
+          const validated = validatePayloadForKind(knownKind, args.payload);
+          const directive = {
+            type: 'place' as const,
+            id,
+            kind: knownKind,
+            role: args.role,
+            payload: validated,
+          };
+          return {
+            content: [
+              { type: 'text' as const, text: JSON.stringify({ ok: true, id, directive }) },
+            ],
+          };
+        } catch (e) {
+          // Specialized schema rejected the payload — fall through to
+          // the auto-classifier so the user still gets *something*
+          // rendered. Emit the original validation error in the result
+          // text so the agent sees what went wrong and can self-correct
+          // on the next call.
+          const message = e instanceof Error ? e.message : String(e);
+          const generic = classifyToGeneric(knownKind, args.payload);
+          const directive = {
+            type: 'place' as const,
+            id,
+            kind: 'generic' as const,
+            role: args.role,
+            payload: generic as unknown as Record<string, unknown>,
+          };
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify({
+                  ok: true,
+                  id,
+                  directive,
+                  reformatted: { from: knownKind, reason: message },
+                }),
+              },
+            ],
+          };
+        }
       }
+
+      // Unknown kind — straight to classifier.
+      const generic = classifyToGeneric(args.kind, args.payload);
+      const directive = {
+        type: 'place' as const,
+        id,
+        kind: 'generic' as const,
+        role: args.role,
+        payload: generic as unknown as Record<string, unknown>,
+      };
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              ok: true,
+              id,
+              directive,
+              reformatted: { from: args.kind, reason: 'unknown kind' },
+            }),
+          },
+        ],
+      };
     },
   );
   return def as unknown as PlaceWidgetToolDef;

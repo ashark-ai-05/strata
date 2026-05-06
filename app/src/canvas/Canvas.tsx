@@ -18,6 +18,7 @@ import { CompositeShapeUtil } from './shapes/composite';
 import { TasksShapeUtil } from './shapes/tasks';
 import { KanbanShapeUtil } from './shapes/kanban';
 import { StickyNoteShapeUtil } from './shapes/sticky-note';
+import { GenericShapeUtil } from './shapes/generic';
 import { computeCanvasSnapshot } from './snapshot';
 import { setLatestSnapshot } from '../state/snapshot-ref';
 import { setEditor } from '../state/editor-ref';
@@ -48,6 +49,9 @@ const customShapeUtils = [
   TasksShapeUtil,
   KanbanShapeUtil,
   StickyNoteShapeUtil,
+  // Universal fallback — auto-classifier targets this when no specialized
+  // kind fits or a payload fails its specialized schema.
+  GenericShapeUtil,
 ];
 const SAVE_DEBOUNCE_MS = 500;
 

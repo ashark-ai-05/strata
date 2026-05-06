@@ -20,6 +20,7 @@ export const WIDGET_KINDS = [
   'tasks',
   'kanban',
   'sticky-note',
+  'generic',
 ] as const;
 export type WidgetKind = (typeof WIDGET_KINDS)[number];
 

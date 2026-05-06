@@ -56,6 +56,7 @@ const ANCHOR_EMOJI: Record<string, string> = {
   tasks: '✅',
   kanban: '📋',
   'sticky-note': '📒',
+  generic: '🧱',
 };
 
 /**

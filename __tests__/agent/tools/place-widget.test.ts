@@ -25,25 +25,46 @@ describe('place_widget', () => {
     });
   });
 
-  it('rejects malformed payload for the chosen kind', async () => {
+  it('auto-classifies a malformed specialized payload to generic', async () => {
     const handler = placeWidgetTool().handler;
     const r = await handler(
       {
         kind: 'web-embed',
         role: 'reference',
-        payload: { title: 'docs', url: 'not-a-url' },
+        // Missing required `url`; web-embed schema will reject.
+        payload: { title: 'docs', body: 'fallback markdown' },
       },
       undefined,
     );
-    expect(r.isError).toBe(true);
-    expect(r.content[0]!.text).toContain('Invalid payload');
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0]!.text!);
+    expect(out.ok).toBe(true);
+    expect(out.directive.kind).toBe('generic');
+    expect(out.reformatted).toEqual(
+      expect.objectContaining({ from: 'web-embed' }),
+    );
+    // The classifier should have salvaged the body field as a markdown block.
+    expect(out.directive.payload.blocks).toContainEqual(
+      expect.objectContaining({ type: 'markdown' }),
+    );
   });
 
-  it('rejects unknown kind', async () => {
+  it('auto-classifies an unknown kind to generic', async () => {
     const handler = placeWidgetTool().handler;
-    // @ts-expect-error testing runtime guard
-    const r = await handler({ kind: 'made-up-kind', role: 'primary', payload: {} }, undefined);
-    expect(r.isError).toBe(true);
+    const r = await handler(
+      {
+        kind: 'candlestick-chart',
+        role: 'primary',
+        payload: { title: 'BTC', columns: [{ key: 't' }], rows: [['09:00']] },
+      },
+      undefined,
+    );
+    expect(r.isError).toBeFalsy();
+    const out = JSON.parse(r.content[0]!.text!);
+    expect(out.directive.kind).toBe('generic');
+    expect(out.reformatted).toEqual(
+      expect.objectContaining({ from: 'candlestick-chart' }),
+    );
   });
 
   it('mints a unique id per call', async () => {

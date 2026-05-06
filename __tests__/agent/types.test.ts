@@ -8,7 +8,7 @@ import {
 } from '../../src/agent/types.js';
 
 describe('agent/types', () => {
-  it('WIDGET_KINDS contains all 12 registered kinds', () => {
+  it('WIDGET_KINDS contains all registered kinds (12 specialized + generic fallback)', () => {
     expect([...WIDGET_KINDS]).toEqual([
       'markdown',
       'code-block',
@@ -22,6 +22,7 @@ describe('agent/types', () => {
       'tasks',
       'kanban',
       'sticky-note',
+      'generic',
     ]);
   });
 

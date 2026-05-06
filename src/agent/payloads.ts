@@ -194,6 +194,75 @@ export const KanbanPayload = z.object({
   ...baseAttribution,
 });
 
+/**
+ * Generic widget — universal fallback that composes typed blocks. The agent
+ * uses this when no specialized kind fits, OR the dispatcher synthesizes one
+ * via the auto-classifier when a payload fails its specialized schema.
+ *
+ * Block union (extensible — add types here, then a renderer in
+ * app/src/canvas/shapes/generic.tsx):
+ *   - markdown : { content }
+ *   - table    : { columns, rows, rowLinks? }     // mirrors TablePayload
+ *   - kv       : { fields: [{ key, value, url? }]} // mirrors KeyValueCardPayload
+ *   - embed    : { url, height? }                  // iframe
+ *   - json     : { data }                          // pretty-printed fallback
+ *
+ * The classifier (src/agent/classifier.ts) will only ever emit these five
+ * starter blocks. Adding a new block type is a 3-step change: schema below,
+ * renderer in generic.tsx, optional classifier heuristic.
+ */
+const MarkdownBlock = z.object({
+  type: z.literal('markdown'),
+  content: z.string(),
+});
+const TableBlock = z.object({
+  type: z.literal('table'),
+  columns: z.array(
+    z.object({
+      key: z.string(),
+      label: z.string().optional(),
+      align: z.enum(['left', 'right', 'center']).optional(),
+      mono: z.boolean().optional(),
+    }),
+  ),
+  rows: z.array(z.array(z.string())),
+  rowLinks: z.array(z.union([z.string().url(), z.null()])).optional(),
+});
+const KVBlock = z.object({
+  type: z.literal('kv'),
+  fields: z.array(
+    z.object({
+      key: z.string(),
+      value: z.string(),
+      url: z.string().url().optional(),
+    }),
+  ),
+});
+const EmbedBlock = z.object({
+  type: z.literal('embed'),
+  url: z.string().url(),
+  height: z.number().int().positive().optional(),
+});
+const JsonBlock = z.object({
+  type: z.literal('json'),
+  data: z.unknown(),
+});
+const GenericBlock = z.discriminatedUnion('type', [
+  MarkdownBlock,
+  TableBlock,
+  KVBlock,
+  EmbedBlock,
+  JsonBlock,
+]);
+export type GenericBlockT = z.infer<typeof GenericBlock>;
+
+export const GenericPayload = z.object({
+  title: z.string(),
+  subtitle: z.string().optional(),
+  blocks: z.array(GenericBlock).min(1),
+  ...baseAttribution,
+});
+
 export const StickyNotePayload = z.object({
   body: z.string(),
   author: z.string().optional(),
@@ -261,7 +330,12 @@ const PAYLOAD_SCHEMAS = {
   tasks: TasksPayload,
   kanban: KanbanPayload,
   'sticky-note': StickyNotePayload,
+  generic: GenericPayload,
 } as const satisfies Record<WidgetKind, z.ZodTypeAny>;
+
+/** Re-export for the auto-classifier (which needs to know which kinds exist
+ *  but lives outside this file). */
+export const PAYLOAD_SCHEMAS_BY_KIND = PAYLOAD_SCHEMAS;
 
 /**
  * Parse `payload` against the schema for `kind`.

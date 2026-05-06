@@ -2377,6 +2377,96 @@ header button:hover {
 }
 
 /* ──────────────────────────────────────────────────────────────────
+ * Generic widget — universal-fallback shape composed of typed blocks.
+ * Each block has its own scope; the wrapper just stacks them with
+ * consistent spacing and a shared subtitle bar.
+ * ──────────────────────────────────────────────────────────────────*/
+.opencanvas-generic-subtitle {
+  font-size: 11px;
+  color: #71717a;
+  font-style: italic;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.opencanvas-generic-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.opencanvas-generic-block {
+  font-size: 12.5px;
+  color: #e4e4e7;
+}
+.opencanvas-generic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.opencanvas-generic-table th {
+  padding: 6px 10px;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #a1a1aa;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.opencanvas-generic-table td {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: #e4e4e7;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.opencanvas-generic-kv {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(80px, auto) 1fr;
+  row-gap: 6px;
+  column-gap: 14px;
+}
+.opencanvas-generic-kv-row {
+  display: contents;
+}
+.opencanvas-generic-kv dt {
+  color: #a1a1aa;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  align-self: baseline;
+}
+.opencanvas-generic-kv dd {
+  margin: 0;
+  color: #fafafa;
+  word-break: break-word;
+}
+.opencanvas-generic-embed-foot {
+  font-size: 10.5px;
+  color: #71717a;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.opencanvas-generic-json {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #d4d4d8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+/* ──────────────────────────────────────────────────────────────────
  * Source-link affordances inside widgets (rows, fields, events).
  * `.opencanvas-row-link` is the inline-text variant used inside
  * key-value-card and timeline. `.opencanvas-table-row--linked` lights
