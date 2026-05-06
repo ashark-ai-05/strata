@@ -335,6 +335,48 @@
 .opencanvas-chat-message {
   animation: opencanvas-fade-up 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
+/* Make sure chat text is selectable end-to-end. The floating chat panel
+   has drag handlers on its title bar and framer-motion wrappers
+   throughout — defensive `user-select: text` here keeps the message
+   bodies copy-friendly regardless of ancestors. */
+.opencanvas-chat-scroll {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Per-message header: role label + copy button. Copy button stays subtle
+   until the row is hovered so it doesn't compete with the message. */
+.opencanvas-chat-msg-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.opencanvas-chat-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, background 140ms ease, color 140ms ease,
+    border-color 140ms ease;
+}
+.opencanvas-chat-message:hover .opencanvas-chat-copy-btn,
+.opencanvas-chat-copy-btn:focus-visible {
+  opacity: 1;
+}
+.opencanvas-chat-copy-btn:hover {
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.3);
+}
 @keyframes opencanvas-fade-up {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }

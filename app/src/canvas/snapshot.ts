@@ -22,6 +22,7 @@ const SHAPE_TO_KIND: Record<string, WidgetKind> = {
   'opencanvas:tasks': 'tasks',
   'opencanvas:kanban': 'kanban',
   'opencanvas:sticky-note': 'sticky-note',
+  'opencanvas:generic': 'generic',
 };
 
 export type CanvasSnapshotShape = {

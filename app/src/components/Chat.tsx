@@ -1,6 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Send, Square } from 'lucide-react';
+import { Send, Square, Copy, Check } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -166,6 +166,51 @@ function describeToolInput(input: unknown): string | null {
 
 function truncate(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+/**
+ * Extract user-facing text from a message: concatenate `text` parts in
+ * order, separated by blank lines. Reasoning, tool calls, and structured
+ * data parts are skipped — those are tooling chrome, not the answer.
+ * Used by the per-message copy button.
+ */
+function extractMessageText(m: {
+  parts: ReadonlyArray<{ type: string; text?: string }>;
+}): string {
+  return m.parts
+    .filter((p) => p.type === 'text' && typeof p.text === 'string')
+    .map((p) => (p.text ?? '').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+/**
+ * Per-message copy chip. Renders a Copy icon that flips to a Check for
+ * 1.4s after a successful copy. Falls back to a toast on clipboard errors
+ * (sandboxed contexts may reject the writeText call).
+ */
+function CopyMessageButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  if (!text) return null;
+  return (
+    <button
+      type="button"
+      className="opencanvas-chat-copy-btn"
+      title={copied ? 'Copied!' : 'Copy message'}
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1400);
+          })
+          .catch(() => toast.error('Copy failed — clipboard permission?'));
+      }}
+    >
+      {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+    </button>
+  );
 }
 
 /**
@@ -466,10 +511,13 @@ export function Chat() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
-              className="flex flex-col gap-1.5"
+              className="opencanvas-chat-message flex flex-col gap-1.5"
             >
-              <div className="text-[10px] uppercase tracking-[0.14em] text-zinc-500 font-semibold">
-                {m.role === 'user' ? 'you' : 'opencanvas'}
+              <div className="opencanvas-chat-msg-header">
+                <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-500 font-semibold">
+                  {m.role === 'user' ? 'you' : 'opencanvas'}
+                </span>
+                <CopyMessageButton text={extractMessageText(m)} />
               </div>
               {/* "Show thinking + sources" — collapsible per-message
                   panel that surfaces both reasoning chunks (type
