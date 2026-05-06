@@ -1286,17 +1286,33 @@ header [aria-hidden].size-5.rounded-md {
   box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.25);
 }
 
-/* Floating chat — gradient hairline border via background-clip + padding-box. */
+/* Floating chat — animated conic-gradient hairline border via
+ * background-clip + padding-box. The conic angle animates via
+ * `--opencanvas-chat-angle` (declared further down with @property),
+ * so the visible 1px border drifts continuously through violet →
+ * pink → cyan and back. Subtle when idle, brighter while streaming. */
 .opencanvas-chat-floating {
   background:
     linear-gradient(rgba(10, 10, 13, 0.92), rgba(10, 10, 13, 0.92)) padding-box,
-    var(--grad-brand) border-box;
-  border: 1px solid transparent;
+    conic-gradient(
+      from var(--opencanvas-chat-angle, 0deg),
+      #a78bfa 0deg,
+      #f0abfc 90deg,
+      #67e8f9 180deg,
+      #f0abfc 270deg,
+      #a78bfa 360deg
+    )
+      border-box;
+  border: 1.5px solid transparent;
+  animation: opencanvas-chat-border-spin 7s linear infinite;
   transition:
     width 200ms ease,
     height 200ms ease,
     box-shadow 240ms ease,
     transform 200ms ease;
+}
+.opencanvas-chat-floating[data-streaming='true'] {
+  animation-duration: 3.2s;
 }
 .opencanvas-chat-floating[data-streaming='true'] {
   box-shadow:
@@ -2388,40 +2404,55 @@ header button:hover {
   inherits: false;
   initial-value: 0deg;
 }
-.opencanvas-chat-floating::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: conic-gradient(
-    from var(--opencanvas-chat-angle),
-    rgba(167, 139, 250, 0.55) 0deg,
-    rgba(240, 171, 252, 0.55) 90deg,
-    rgba(103, 232, 249, 0.55) 180deg,
-    rgba(167, 139, 250, 0.55) 270deg,
-    rgba(240, 171, 252, 0.55) 360deg
-  );
-  /* Mask the inside so only the 1px ring shows. */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0.55;
-  animation: opencanvas-chat-border-spin 8s linear infinite;
-  pointer-events: none;
-  transition: opacity 240ms ease;
-}
-.opencanvas-chat-floating[data-streaming='true']::before {
-  opacity: 0.95;
-  animation-duration: 3.6s;
-}
 @keyframes opencanvas-chat-border-spin {
   to { --opencanvas-chat-angle: 360deg; }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Animated conic border on the chat composer input + ambient glow.
+ *
+ * Strategy: wrap the input visually with a conic-gradient applied to
+ * a `::before` pseudo-element on the input-wrap. Always-on (slow,
+ * subtle); brighter + faster on focus-within. The input itself keeps
+ * a transparent border so the pseudo's gradient sits exactly at the
+ * input's border position via inset:-1px + mask.
+ * ──────────────────────────────────────────────────────────────────*/
+@property --opencanvas-input-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.opencanvas-chat-input-wrap {
+  position: relative;
+  isolation: isolate;
+}
+.opencanvas-chat-input-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  z-index: -1;
+  border-radius: 14px;
+  background: conic-gradient(
+    from var(--opencanvas-input-angle, 0deg),
+    rgba(167, 139, 250, 0.5) 0deg,
+    rgba(240, 171, 252, 0.5) 90deg,
+    rgba(103, 232, 249, 0.5) 180deg,
+    rgba(240, 171, 252, 0.5) 270deg,
+    rgba(167, 139, 250, 0.5) 360deg
+  );
+  opacity: 0.55;
+  animation: opencanvas-input-border-spin 9s linear infinite;
+  pointer-events: none;
+  transition: opacity 240ms ease, filter 240ms ease;
+}
+.opencanvas-chat-input-wrap:focus-within::before {
+  opacity: 1;
+  filter: brightness(1.15)
+    drop-shadow(0 0 14px rgba(167, 139, 250, 0.45));
+  animation-duration: 4.5s;
+}
+@keyframes opencanvas-input-border-spin {
+  to { --opencanvas-input-angle: 360deg; }
 }
 
 /* ──────────────────────────────────────────────────────────────────
