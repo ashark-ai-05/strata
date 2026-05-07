@@ -1,47 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  /* Deep, true-dark base — punchier than zinc-950, no purple wash. */
-  --color-bg:       #050507;     /* near-black w/ a hint of cool */
-  --color-bg-2:     #0a0a0d;     /* one step up — surfaces, panels */
-  --color-bg-3:     #1c1c25;     /* cards, raised — bumped for more lift over the canvas */
-  --color-line:     rgba(255, 255, 255, 0.09);   /* a touch crisper */
+  /* Neutral charcoal base — no blue undertone. The previous #050507
+     had a faint cool cast that clashed with warmer role colors
+     (amber, rose). Slightly lifted from pure black so cards read
+     as raised against it without going stark. */
+  --color-bg:       #0a0a0c;     /* neutral near-black */
+  --color-bg-2:     #131318;     /* surfaces / panels */
+  --color-bg-3:     #1c1c22;     /* cards (true neutral, was violet-tinted) */
+  --color-line:     rgba(255, 255, 255, 0.09);
   --color-line-2:   rgba(255, 255, 255, 0.14);
-  --color-fg:       #f4f4f5;
+  --color-fg:       #fafafa;     /* zinc-50 — cleaner pure white */
   --color-fg-2:     #d4d4d8;
   --color-muted:    #71717a;
   --color-muted-2:  #52525b;
 
-  /* Primary accent (violet → fuchsia) plus a cyan for the brand gradient. */
-  --color-accent:    #a78bfa;     /* violet-400, lifted for AAA on dark */
-  --color-accent-2:  #f0abfc;     /* fuchsia-300 */
-  --color-accent-3:  #67e8f9;     /* cyan-300 — third gradient stop */
+  /* Brand accent — violet → magenta → pink. Same warm-magenta family
+     end-to-end (no cyan), so the gradient harmonizes with the role
+     palette below instead of fighting it. The previous violet→cyan
+     was the "AI app of 2023" cliché — clean break from that here. */
+  --color-accent:    #a78bfa;     /* violet-400 — primary brand */
+  --color-accent-2:  #d946ef;     /* fuchsia-500 — middle stop */
+  --color-accent-3:  #ec4899;     /* pink-500 — warmer end stop */
   --color-ok:        #34d399;
   --color-warn:      #fbbf24;
   --color-fail:      #f87171;
 
-  /* Pre-baked gradient strings so we can reuse them on text fills,
-     border masks, and box-shadow glows without re-typing the stops. */
-  --grad-brand:      linear-gradient(135deg, #a78bfa 0%, #f0abfc 45%, #67e8f9 100%);
-  --grad-brand-soft: linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(240,171,252,0.18) 50%, rgba(103,232,249,0.18) 100%);
+  /* Pre-baked gradient strings — reused on text fills, border masks,
+     and box-shadow glows. Three stops same as before, but ALL in the
+     warm-magenta family so the gradient reads as "iridescent" rather
+     than "rainbow." */
+  --grad-brand:      linear-gradient(135deg, #a78bfa 0%, #d946ef 50%, #ec4899 100%);
+  --grad-brand-soft: linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(217,70,239,0.18) 50%, rgba(236,72,153,0.18) 100%);
   --glow-violet:     0 0 0 1px rgba(167,139,250,0.40), 0 8px 28px -8px rgba(167,139,250,0.45);
-  --glow-fuchsia:    0 0 0 1px rgba(240,171,252,0.40), 0 8px 28px -8px rgba(240,171,252,0.45);
+  --glow-fuchsia:    0 0 0 1px rgba(217,70,239,0.40), 0 8px 28px -8px rgba(217,70,239,0.45);
 
-  /* Role accents — punchier than before. Each role pairs a primary
-     hue with a "soft" mate used for backdrop tints + glows so the
-     same color reads strong on the stripe but gentle behind the
-     card body. Palette still legible on white in light mode. */
-  --role-primary:        #a78bfa;
+  /* Role accents — six distinct hues, each at Tailwind-400 saturation
+     so they read consistently against each other. Soft variants at
+     18% alpha for backdrop tints (header gradient, card aura) so
+     they bleed into the surface without overwhelming the body. */
+  --role-primary:        #a78bfa;     /* violet  */
   --role-primary-soft:   rgba(167, 139, 250, 0.18);
-  --role-detail:         #60a5fa;
+  --role-detail:         #60a5fa;     /* blue    */
   --role-detail-soft:    rgba(96, 165, 250, 0.18);
-  --role-related:        #2dd4bf;
+  --role-related:        #2dd4bf;     /* teal    */
   --role-related-soft:   rgba(45, 212, 191, 0.18);
-  --role-reference:      #fbbf24;
+  --role-reference:      #fbbf24;     /* amber   */
   --role-reference-soft: rgba(251, 191, 36, 0.18);
-  --role-timeline:       #fb7185;
+  --role-timeline:       #fb7185;     /* rose    */
   --role-timeline-soft:  rgba(251, 113, 133, 0.18);
-  --role-node:           #34d399;
+  --role-node:           #34d399;     /* emerald */
   --role-node-soft:      rgba(52, 211, 153, 0.18);
 }
 
@@ -174,13 +182,13 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 14px;
-  /* Glassmorphism — semi-transparent surface + backdrop blur so the
-     canvas grain shows through, plus a top-down vertical gradient
-     for the "raised panel" cue. The role-color soft tint pulls the
-     card identity into its surface itself, not just the left stripe.
-     The default --role-color-soft falls back to primary's tint. */
+  /* Glassmorphism — neutral charcoal surface (was violet-tinted at
+     38,38,50 → made everything feel "default-violet"). The role
+     color now comes ENTIRELY from the radial tint at top-left, not
+     from the surface itself, so cards in different roles feel
+     genuinely different instead of "violet card with role accent." */
   background:
-    linear-gradient(180deg, rgba(38, 38, 50, 0.85) 0%, rgba(20, 20, 28, 0.85) 100%),
+    linear-gradient(180deg, rgba(34, 34, 38, 0.86) 0%, rgba(20, 20, 24, 0.86) 100%),
     radial-gradient(
       ellipse at top left,
       var(--role-color-soft, var(--role-primary-soft)) 0%,
@@ -1560,9 +1568,9 @@ header [aria-hidden].size-5.rounded-md {
     conic-gradient(
       from var(--opencanvas-chat-angle, 0deg),
       #a78bfa 0deg,
-      #f0abfc 90deg,
-      #67e8f9 180deg,
-      #f0abfc 270deg,
+      #d946ef 90deg,
+      #ec4899 180deg,
+      #d946ef 270deg,
       #a78bfa 360deg
     )
       border-box;
@@ -1597,8 +1605,8 @@ header [aria-hidden].size-5.rounded-md {
     90deg,
     transparent 0%,
     rgba(167, 139, 250, 0.18) 30%,
-    rgba(240, 171, 252, 0.18) 50%,
-    rgba(103, 232, 249, 0.18) 70%,
+    rgba(217, 70, 239, 0.20) 50%,
+    rgba(236, 72, 153, 0.18) 70%,
     transparent 100%
   );
   background-size: 240% 100%;
@@ -1677,7 +1685,7 @@ header [aria-hidden].size-5.rounded-md {
 /* KB hits panel — gradient backdrop instead of flat violet wash. */
 .opencanvas-kb-hits {
   background:
-    linear-gradient(135deg, rgba(167, 139, 250, 0.06) 0%, rgba(240, 171, 252, 0.05) 50%, rgba(103, 232, 249, 0.06) 100%);
+    linear-gradient(135deg, rgba(167, 139, 250, 0.06) 0%, rgba(217, 70, 239, 0.06) 50%, rgba(236, 72, 153, 0.06) 100%);
   border-color: transparent;
   position: relative;
 }
@@ -1838,8 +1846,8 @@ header button:hover {
     90deg,
     transparent 0%,
     rgba(167, 139, 250, 0.16) 30%,
-    rgba(240, 171, 252, 0.16) 50%,
-    rgba(103, 232, 249, 0.16) 70%,
+    rgba(217, 70, 239, 0.16) 50%,
+    rgba(236, 72, 153, 0.16) 70%,
     transparent 100%
   );
   background-size: 240% 100%;
@@ -2107,8 +2115,8 @@ header button:hover {
     90deg,
     transparent 0%,
     rgba(167, 139, 250, 0.16) 30%,
-    rgba(240, 171, 252, 0.16) 50%,
-    rgba(103, 232, 249, 0.16) 70%,
+    rgba(217, 70, 239, 0.16) 50%,
+    rgba(236, 72, 153, 0.16) 70%,
     transparent 100%
   );
   background-size: 240% 100%;
@@ -2693,9 +2701,9 @@ header button:hover {
     conic-gradient(
       from var(--opencanvas-input-angle, 0deg),
       #a78bfa 0deg,
-      #f0abfc 90deg,
-      #67e8f9 180deg,
-      #f0abfc 270deg,
+      #d946ef 90deg,
+      #ec4899 180deg,
+      #d946ef 270deg,
       #a78bfa 360deg
     )
       border-box !important;
@@ -2757,8 +2765,8 @@ header button:hover {
   background: conic-gradient(
     from var(--opencanvas-chat-angle, 0deg),
     #a78bfa 0deg,
-    #f0abfc 120deg,
-    #67e8f9 240deg,
+    #d946ef 120deg,
+    #ec4899 240deg,
     #a78bfa 360deg
   );
   filter: blur(0.4px);
