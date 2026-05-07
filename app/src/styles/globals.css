@@ -10,6 +10,12 @@
   --color-bg-3:     #1c1c22;     /* cards (true neutral, was violet-tinted) */
   --color-line:     rgba(255, 255, 255, 0.09);
   --color-line-2:   rgba(255, 255, 255, 0.14);
+  /* Glass-surface RGB triplet — used inside rgba() for panels / popovers
+     / chat shell so they tint to the theme. Per-theme overrides swap
+     this to the appropriate background color (e.g. white in light
+     theme). All historic `rgba(var(--color-glass-rgb), X)` literals were
+     replaced with `rgba(var(--color-glass-rgb), X)`. */
+  --color-glass-rgb: 10, 10, 13;
   --color-fg:       #fafafa;     /* zinc-50 — cleaner pure white */
   --color-fg-2:     #d4d4d8;
   --color-muted:    #71717a;
@@ -67,12 +73,14 @@
   --color-bg:       #fafafa;   /* zinc-50 */
   --color-bg-2:     #ffffff;   /* white  — surfaces / panels */
   --color-bg-3:     #f4f4f5;   /* zinc-100 — cards (no harsh white-on-white) */
-  --color-line:     rgba(0, 0, 0, 0.06);
-  --color-line-2:   rgba(0, 0, 0, 0.10);
+  --color-line:     rgba(0, 0, 0, 0.08);
+  --color-line-2:   rgba(0, 0, 0, 0.13);
   --color-fg:       #18181b;   /* zinc-900 */
   --color-fg-2:     #3f3f46;   /* zinc-700 */
   --color-muted:    #71717a;
   --color-muted-2:  #a1a1aa;
+  /* Glass surface goes white-tinted on light. */
+  --color-glass-rgb: 255, 255, 255;
 }
 :root[data-theme='light'] .tl-theme__dark,
 :root[data-theme='light'] .tl-theme__light {
@@ -140,6 +148,7 @@
   --color-fg-2:     #cbd5e1;
   --color-muted:    #64748b;
   --color-muted-2:  #475569;
+  --color-glass-rgb: 7, 10, 20;
   --color-accent:    #60a5fa;     /* blue-400 */
   --color-accent-2:  #818cf8;     /* indigo-400 */
   --color-accent-3:  #6366f1;     /* indigo-500 */
@@ -172,6 +181,7 @@
   --color-fg-2:     #fed7aa;
   --color-muted:    #b8a89a;
   --color-muted-2:  #8a7a6d;
+  --color-glass-rgb: 26, 15, 10;
   --color-accent:    #fb923c;     /* orange-400 */
   --color-accent-2:  #f97316;     /* orange-500 */
   --color-accent-3:  #ef4444;     /* red-500 */
@@ -206,6 +216,7 @@
   --color-fg-2:     #d4d4d4;
   --color-muted:    #737373;
   --color-muted-2:  #525252;
+  --color-glass-rgb: 10, 10, 10;
   --color-accent:    #fafafa;
   --color-accent-2:  #d4d4d4;
   --color-accent-3:  #a3a3a3;
@@ -717,7 +728,7 @@
 /* Glass utility — used on chat input, toolbar, panels. Theme-aware:
    dark themes use a near-black tint; light theme uses a white tint. */
 .opencanvas-glass {
-  background: rgba(10, 10, 13, 0.7);
+  background: rgba(var(--color-glass-rgb), 0.7);
   border: 1px solid var(--color-line);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
@@ -825,7 +836,7 @@
   padding: 6px;
   border-radius: 12px;
   background:
-    linear-gradient(rgba(10, 10, 13, 0.78), rgba(10, 10, 13, 0.78)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.78), rgba(var(--color-glass-rgb), 0.78)) padding-box,
     var(--grad-brand-soft) border-box;
   border: 1px solid transparent;
   backdrop-filter: blur(16px);
@@ -1151,7 +1162,7 @@
   width: 24px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(10, 10, 13, 0.75);
+  background: rgba(var(--color-glass-rgb), 0.75);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--color-fg-2);
   cursor: pointer;
@@ -1174,7 +1185,7 @@
   height: min(540px, 80vh);
   display: flex;
   flex-direction: column;
-  background: rgba(10, 10, 13, 0.84);
+  background: rgba(var(--color-glass-rgb), 0.84);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   /* `overflow: visible` so the ChatOptionsMenu dropdown can escape the
@@ -1307,7 +1318,7 @@
   gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(10, 10, 13, 0.86);
+  background: rgba(var(--color-glass-rgb), 0.86);
   border: 1px solid rgba(167, 139, 250, 0.34);
   color: var(--color-fg);
   font-size: 13px;
@@ -1773,7 +1784,7 @@ header [aria-hidden].size-5.rounded-md {
  * pink → cyan and back. Subtle when idle, brighter while streaming. */
 .opencanvas-chat-floating {
   background:
-    linear-gradient(rgba(10, 10, 13, 0.92), rgba(10, 10, 13, 0.92)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.92), rgba(var(--color-glass-rgb), 0.92)) padding-box,
     conic-gradient(
       from var(--opencanvas-chat-angle, 0deg),
       #a78bfa 0deg,
@@ -1928,7 +1939,7 @@ header [aria-hidden].size-5.rounded-md {
 /* Launcher bubble — animated gradient + breathing. */
 .opencanvas-chat-launcher {
   background:
-    linear-gradient(rgba(10, 10, 13, 0.86), rgba(10, 10, 13, 0.86)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.86), rgba(var(--color-glass-rgb), 0.86)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
   animation: opencanvas-mark-breathe 5.6s ease-in-out infinite;
@@ -1994,7 +2005,7 @@ header button:hover {
 /* Toast fixes — gradient border. */
 [data-sonner-toaster] [data-sonner-toast] {
   background:
-    linear-gradient(rgba(10, 10, 13, 0.88), rgba(10, 10, 13, 0.88)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.88), rgba(var(--color-glass-rgb), 0.88)) padding-box,
     var(--grad-brand-soft) border-box !important;
 }
 
@@ -2038,7 +2049,7 @@ header button:hover {
   font-weight: 500;
   color: #ede9fe;
   background:
-    linear-gradient(rgba(10, 10, 13, 0.85), rgba(10, 10, 13, 0.85)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.85), rgba(var(--color-glass-rgb), 0.85)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
   box-shadow: 0 0 24px -8px rgba(167, 139, 250, 0.55);
@@ -2167,7 +2178,7 @@ header button:hover {
   border-radius: 10px;
   border: 1px solid rgba(167, 139, 250, 0.18);
   background:
-    linear-gradient(rgba(10, 10, 13, 0.55), rgba(10, 10, 13, 0.55)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.55), rgba(var(--color-glass-rgb), 0.55)) padding-box,
     var(--grad-brand-soft) border-box;
   overflow: hidden;
   font-size: 13px;
@@ -2309,7 +2320,7 @@ header button:hover {
   font-weight: 500;
   color: #ede9fe;
   background:
-    linear-gradient(rgba(10, 10, 13, 0.7), rgba(10, 10, 13, 0.7)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.7), rgba(var(--color-glass-rgb), 0.7)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
   box-shadow: 0 0 16px -6px rgba(167, 139, 250, 0.55);
@@ -2389,7 +2400,7 @@ header button:hover {
   padding: 10px 12px;
   border-radius: 12px;
   background:
-    linear-gradient(rgba(10, 10, 13, 0.92), rgba(10, 10, 13, 0.92)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.92), rgba(var(--color-glass-rgb), 0.92)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
   backdrop-filter: blur(18px);
@@ -2784,7 +2795,7 @@ header button:hover {
   padding: 4px 10px;
   border-radius: 999px;
   background:
-    linear-gradient(rgba(10, 10, 13, 0.6), rgba(10, 10, 13, 0.6)) padding-box,
+    linear-gradient(rgba(var(--color-glass-rgb), 0.6), rgba(var(--color-glass-rgb), 0.6)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
   font-size: 11px;
