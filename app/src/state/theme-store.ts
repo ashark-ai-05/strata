@@ -71,12 +71,26 @@ export const THEME_META: Record<
 
 const KEY = 'opencanvas:theme';
 
+/**
+ * Theme picker is currently disabled — the app force-defaults to
+ * `dark` regardless of any value previously stored in localStorage.
+ * The theme infrastructure (THEMES enum, per-theme CSS-var blocks
+ * in globals.css, theme-aware glass-rgb variable) stays in place
+ * so re-enabling the picker is a single-file change in App.tsx.
+ *
+ * On load we also CLEAR any stored value so a user who previously
+ * picked `light` doesn't keep getting served the broken light
+ * theme.
+ */
 function loadInitial(): Theme {
-  if (typeof localStorage === 'undefined') return 'dark';
-  const raw = localStorage.getItem(KEY);
-  return (THEMES as readonly string[]).includes(raw as string)
-    ? (raw as Theme)
-    : 'dark';
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {
+      /* private mode etc. */
+    }
+  }
+  return 'dark';
 }
 
 function applyToDocument(theme: Theme): void {
