@@ -146,7 +146,7 @@ function TreeNode({
           padding: '2px 4px',
           borderRadius: 4,
           cursor: interactive ? 'pointer' : 'default',
-          fontSize: 12.5,
+          fontSize: 13,
           color: isDir ? '#fafafa' : '#d4d4d8',
           fontFamily: 'JetBrains Mono, ui-monospace, monospace',
           userSelect: 'none',
@@ -186,7 +186,7 @@ function TreeNode({
           {node.name}
         </span>
         {node.meta && (
-          <span style={{ fontSize: 10.5, color: '#52525b' }}>{node.meta}</span>
+          <span style={{ fontSize: 11, color: '#52525b' }}>{node.meta}</span>
         )}
         {fileUrl && (
           <span aria-hidden style={{ fontSize: 10, color: '#71717a' }}>

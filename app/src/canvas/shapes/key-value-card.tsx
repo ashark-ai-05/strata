@@ -104,7 +104,7 @@ function Row({ k, v, url }: { k: string; v: string; url?: string }) {
         style={{
           color: '#a1a1aa',
           fontFamily: 'ui-monospace, monospace',
-          fontSize: 11.5,
+          fontSize: 12,
           letterSpacing: 0.02,
           alignSelf: 'baseline',
         }}

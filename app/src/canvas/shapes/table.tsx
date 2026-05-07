@@ -97,7 +97,7 @@ export class TableShapeUtil extends ShapeUtil<TableShape> {
                         textAlign: (c.align as 'left' | 'right' | 'center' | undefined) ?? 'left',
                         padding: '8px 12px',
                         fontWeight: 600,
-                        fontSize: 10.5,
+                        fontSize: 11,
                         textTransform: 'uppercase',
                         letterSpacing: 0.04,
                         color: '#a1a1aa',

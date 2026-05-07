@@ -158,7 +158,7 @@ export class TimelineShapeUtil extends ShapeUtil<TimelineShape> {
                       )}
                     </div>
                     {e.body && (
-                      <div style={{ fontSize: 12.5, color: '#a1a1aa', marginTop: 3, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 13, color: '#a1a1aa', marginTop: 3, lineHeight: 1.5 }}>
                         {e.body}
                       </div>
                     )}

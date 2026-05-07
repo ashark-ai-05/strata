@@ -121,7 +121,7 @@ function MenuRow({
         background: 'transparent',
         border: 'none',
         color: 'var(--color-fg-2)',
-        fontSize: 12.5,
+        fontSize: 13,
         cursor: 'pointer',
         textAlign: 'left',
       }}

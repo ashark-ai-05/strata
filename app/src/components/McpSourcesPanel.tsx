@@ -131,7 +131,7 @@ export function McpSourcesPanel({
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.08)',
                   color: 'var(--color-fg-2)',
-                  fontSize: 11.5,
+                  fontSize: 12,
                   cursor: probing ? 'not-allowed' : 'pointer',
                   opacity: probing ? 0.6 : 1,
                 }}
@@ -183,7 +183,7 @@ export function McpSourcesPanel({
                     background: 'rgba(248,113,113,0.08)',
                     border: '1px solid rgba(248,113,113,0.32)',
                     color: '#fecaca',
-                    fontSize: 12.5,
+                    fontSize: 13,
                   }}
                 >
                   {error}
@@ -191,7 +191,7 @@ export function McpSourcesPanel({
               )}
 
               {sources === null ? (
-                <div style={{ color: 'var(--color-muted)', fontSize: 12.5 }}>
+                <div style={{ color: 'var(--color-muted)', fontSize: 13 }}>
                   Loading…
                 </div>
               ) : sources.length === 0 ? (
@@ -201,7 +201,7 @@ export function McpSourcesPanel({
                     borderRadius: 10,
                     background: 'rgba(255,255,255,0.025)',
                     border: '1px solid rgba(255,255,255,0.06)',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     color: 'var(--color-fg-2)',
                   }}
                 >
@@ -247,7 +247,7 @@ export function McpSourcesPanel({
                         </span>
                         <span
                           style={{
-                            fontSize: 10.5,
+                            fontSize: 11,
                             color: 'var(--color-muted)',
                             fontFamily: "'JetBrains Mono', monospace",
                           }}
@@ -257,7 +257,7 @@ export function McpSourcesPanel({
                         <span
                           style={{
                             marginLeft: 'auto',
-                            fontSize: 10.5,
+                            fontSize: 11,
                             color: 'var(--color-muted)',
                             textTransform: 'uppercase',
                             letterSpacing: 0.06,

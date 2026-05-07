@@ -4,9 +4,9 @@
   /* Deep, true-dark base — punchier than zinc-950, no purple wash. */
   --color-bg:       #050507;     /* near-black w/ a hint of cool */
   --color-bg-2:     #0a0a0d;     /* one step up — surfaces, panels */
-  --color-bg-3:     #14141a;     /* cards, raised */
-  --color-line:     rgba(255, 255, 255, 0.06);
-  --color-line-2:   rgba(255, 255, 255, 0.10);
+  --color-bg-3:     #1c1c25;     /* cards, raised — bumped for more lift over the canvas */
+  --color-line:     rgba(255, 255, 255, 0.09);   /* a touch crisper */
+  --color-line-2:   rgba(255, 255, 255, 0.14);
   --color-fg:       #f4f4f5;
   --color-fg-2:     #d4d4d8;
   --color-muted:    #71717a;
@@ -129,17 +129,31 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 14px;
-  background: linear-gradient(180deg, var(--color-bg-3) 0%, var(--color-bg-2) 100%);
+  /* Brighter top → darker bottom gradient for a clearer "raised panel"
+     read against the deep canvas. Card surfaces had been almost
+     invisible against the bg before. */
+  background: linear-gradient(180deg, #20202a 0%, #14141b 100%);
   color: var(--color-fg);
-  border: 1px solid var(--color-line);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  /* Single inset highlight for a polished top edge; tighter drop
+     shadow for crisp edges at any zoom. The earlier two-stacked
+     inset shadow + 12px-spread blur fought each other and looked
+     muddy. */
   box-shadow:
-    0 0 0 1px var(--color-line) inset,
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 12px 32px -12px rgba(0, 0, 0, 0.8),
-    0 2px 8px -2px rgba(0, 0, 0, 0.5);
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 8px 24px -8px rgba(0, 0, 0, 0.7),
+    0 2px 6px -2px rgba(0, 0, 0, 0.55);
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.5;
   font-feature-settings: 'cv11', 'ss01', 'ss03';
+  /* Crisper text rendering — geometricPrecision pins the layout to
+     ideal glyph metrics (no autohinting fuzz at non-1x tldraw zoom);
+     antialiased + grayscale stop the LCD-subpixel red/green fringe
+     bleeding through the dark background. */
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   pointer-events: all;
   transition:
     transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -147,24 +161,26 @@
     border-color 200ms ease;
 }
 
-/* Left-edge role accent — soft glow stripe in the role color. */
+/* Left-edge role accent — bolder + brighter glow than before. */
 .opencanvas-card::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 2px;
+  width: 3px;
   background: var(--role-color, var(--role-primary));
-  box-shadow: 0 0 18px 0 var(--role-color, var(--role-primary));
-  opacity: 0.85;
+  box-shadow:
+    0 0 22px 0 var(--role-color, var(--role-primary)),
+    0 0 6px 0 var(--role-color, var(--role-primary));
+  opacity: 1;
 }
 
-/* Top sheen — subtle highlight across the card top edge. */
+/* Top sheen — bumped from 4% to 7% white so it actually shows. */
 .opencanvas-card::after {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 32%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+  height: 36%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, transparent 100%);
   pointer-events: none;
 }
 
@@ -200,15 +216,15 @@
 }
 
 .opencanvas-card-title {
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 650;
+  font-size: 14px;
   color: var(--color-fg);
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.014em;
 }
 
 .opencanvas-card-body {
@@ -272,7 +288,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--color-muted);
   background: rgba(0, 0, 0, 0.18);
 }
@@ -710,7 +726,7 @@
 }
 .opencanvas-cmdk-kbd {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #71717a;
   padding: 1px 6px;
   border-radius: 4px;
@@ -776,7 +792,7 @@
 }
 .opencanvas-cmdk-empty {
   padding: 16px 14px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: #a1a1aa;
   display: flex;
   align-items: center;
@@ -1036,7 +1052,7 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 .opencanvas-composite-section-heading {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1078,7 +1094,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--color-fg);
 }
 .opencanvas-tasks-row[data-done='true'] .opencanvas-tasks-text {
@@ -1146,11 +1162,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .opencanvas-kanban-card-title { font-weight: 500; color: var(--color-fg); }
-.opencanvas-kanban-card-body { color: var(--color-fg-2); font-size: 11.5px; line-height: 1.45; }
-.opencanvas-kanban-card-assignee { font-size: 10.5px; color: var(--color-muted); }
+.opencanvas-kanban-card-body { color: var(--color-fg-2); font-size: 12px; line-height: 1.45; }
+.opencanvas-kanban-card-assignee { font-size: 11px; color: var(--color-muted); }
 
 /* sticky note */
 .opencanvas-sticky {
@@ -1215,7 +1231,7 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--color-fg-2);
-  font-size: 10.5px;
+  font-size: 11px;
   text-decoration: none;
   transition:
     background 160ms ease,
@@ -1288,7 +1304,7 @@
 .opencanvas-kb-hits-empty {
   padding: 4px 2px;
   color: var(--color-muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .opencanvas-kb-hits-list {
   list-style: none;
@@ -1336,7 +1352,7 @@
   text-overflow: ellipsis;
 }
 .opencanvas-kb-hits-row-snippet {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-fg-2);
   line-height: 1.45;
   /* Clamp to two lines so a long body doesn't blow the panel up. */
@@ -1851,7 +1867,7 @@ header button:hover {
     linear-gradient(rgba(10, 10, 13, 0.55), rgba(10, 10, 13, 0.55)) padding-box,
     var(--grad-brand-soft) border-box;
   overflow: hidden;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .opencanvas-thinking-toggle {
   display: inline-flex;
@@ -1893,7 +1909,7 @@ header button:hover {
   color: var(--color-fg-2);
   white-space: pre-wrap;
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.55;
   max-height: 280px;
   overflow-y: auto;
@@ -1911,7 +1927,7 @@ header button:hover {
   margin-top: 8px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: #ddd6fe;
   background: rgba(167, 139, 250, 0.08);
@@ -1986,7 +2002,7 @@ header button:hover {
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: #ede9fe;
   background:
@@ -2035,7 +2051,7 @@ header button:hover {
   gap: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: #c4b5fd;
   background: rgba(167, 139, 250, 0.10);
@@ -2156,7 +2172,7 @@ header button:hover {
   text-overflow: ellipsis;
 }
 .opencanvas-composer-hits-row-snippet {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-fg-2);
   line-height: 1.45;
   display: -webkit-box;
@@ -2301,9 +2317,12 @@ header button:hover {
  * One central style so all surfaces look consistent.
  * ---------------------------------------------------------------------- */
 .opencanvas-markdown {
-  font-size: 13.5px;
+  /* Whole-number font-size matters — fractional sizes (13.5px) never
+     pixel-align, so the rasterizer always falls back to fuzzy
+     subpixel AA. 14px is one of the cleanest body sizes available. */
+  font-size: 14px;
   line-height: 1.6;
-  color: var(--color-fg-2);
+  color: var(--color-fg);   /* was fg-2; bumped for stronger text contrast */
   word-break: break-word;
 }
 .opencanvas-markdown > * + * { margin-top: 8px; }
@@ -2399,7 +2418,7 @@ header button:hover {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 12.5px;
+  font-size: 13px;
   margin: 6px 0;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -2413,7 +2432,7 @@ header button:hover {
 }
 .opencanvas-markdown th {
   font-weight: 600;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -2465,7 +2484,7 @@ header button:hover {
     linear-gradient(rgba(10, 10, 13, 0.6), rgba(10, 10, 13, 0.6)) padding-box,
     var(--grad-brand) border-box;
   border: 1px solid transparent;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #ddd6fe;
@@ -2711,7 +2730,7 @@ header button:hover {
   gap: 12px;
 }
 .opencanvas-generic-block {
-  font-size: 12.5px;
+  font-size: 13px;
   color: #e4e4e7;
 }
 .opencanvas-generic-table {
@@ -2722,7 +2741,7 @@ header button:hover {
 .opencanvas-generic-table th {
   padding: 6px 10px;
   font-weight: 600;
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #a1a1aa;
@@ -2730,7 +2749,7 @@ header button:hover {
 }
 .opencanvas-generic-table td {
   padding: 6px 10px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: #e4e4e7;
   vertical-align: top;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -2749,7 +2768,7 @@ header button:hover {
 .opencanvas-generic-kv dt {
   color: #a1a1aa;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   align-self: baseline;
 }
@@ -2759,7 +2778,7 @@ header button:hover {
   word-break: break-word;
 }
 .opencanvas-generic-embed-foot {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #71717a;
   margin-top: 4px;
   overflow: hidden;
@@ -2930,7 +2949,7 @@ header button:hover {
   margin-left: 4px;
 }
 .opencanvas-history-clear {
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #71717a;
@@ -2973,7 +2992,7 @@ header button:hover {
   background: transparent;
   border: 1px solid transparent;
   color: var(--color-fg-2);
-  font-size: 12.5px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease,
@@ -2991,7 +3010,7 @@ header button:hover {
 }
 .opencanvas-history-row-abs {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #71717a;
 }
 .opencanvas-history-row-tag {
@@ -3276,7 +3295,7 @@ header button:hover {
   gap: 6px;
   margin: 6px 0 4px 0;
   color: #a78bfa;
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -3364,7 +3383,7 @@ header button:hover {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
