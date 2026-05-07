@@ -195,17 +195,16 @@ function BlockRenderer({
 }) {
   switch (block.type) {
     case 'markdown':
+      // Streaming caret is appended via CSS `::after` on the last
+      // child of the markdown output (see globals.css), so it sits
+      // inline at the end of the final paragraph rather than dropping
+      // to its own line. data-streaming gates the rule.
       return (
         <div
           className="opencanvas-generic-block opencanvas-markdown"
           data-streaming={streaming && isLast ? 'true' : 'false'}
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
-          {streaming && isLast && (
-            <span className="opencanvas-generic-caret" aria-hidden>
-              ▍
-            </span>
-          )}
         </div>
       );
     case 'table':

@@ -91,17 +91,22 @@ function PluginBody({ shape }: { shape: PluginShape }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [frameReady, setFrameReady] = useState(false);
 
-  // Build the iframe srcdoc once per descriptor. We prepend a tiny
-  // shim that exposes the initial props synchronously and wires up a
-  // postMessage listener for live updates. The shim is ~30 lines of
-  // inline JS — no external resources.
+  // Capture the props at first iframe mount. The shim bakes these in
+  // as window.opencanvas.props synchronously; subsequent updates are
+  // pushed via postMessage. We deliberately DON'T include `props` in
+  // the srcdoc memo deps — re-deriving srcdoc on every prop change
+  // would change the <iframe srcDoc> attribute, force a full reload,
+  // and the page would flash white on every refresh tick (one of the
+  // visible "flakiness" sources).
+  const initialPropsRef = useRef(props);
   const srcdoc = useMemo(() => {
     if (!descriptor || descriptor.renderer.type !== 'iframe') return null;
-    return wrapSrcdoc(descriptor.renderer.srcdoc, props);
-  }, [descriptor, props]);
+    return wrapSrcdoc(descriptor.renderer.srcdoc, initialPropsRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [descriptor]);
 
-  // After the first render, push prop updates via postMessage so the
-  // iframe doesn't have to reload to pick up new props.
+  // After the iframe has loaded, push every prop update via postMessage
+  // so the iframe re-renders in place — no reload, no flash.
   useEffect(() => {
     if (!frameReady) return;
     const win = iframeRef.current?.contentWindow;

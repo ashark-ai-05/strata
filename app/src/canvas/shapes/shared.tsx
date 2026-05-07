@@ -83,11 +83,22 @@ export type SourcePill = string | { url: string; label?: string };
  * when present; web-embed suppresses the single-source footer because the
  * URL is already prominent in the body.
  */
+/**
+ * Module-scope set of shape ids that have already played their fresh-
+ * placement pulse. tldraw virtualises shapes that scroll off-screen
+ * and re-mounts them on return; without this, the pulse re-fires
+ * every time the shape comes back into view (the visible "flakiness"
+ * — cards appear to flash on scroll). Shape ids are unique-per-canvas
+ * so we never over-suppress.
+ */
+const PULSED_SHAPE_IDS = new Set<string>();
+
 export function CardFrame({
   shape,
   children,
 }: {
   shape: {
+    id: string;
     props: {
       w: number;
       h: number;
@@ -102,13 +113,16 @@ export function CardFrame({
   const role = readRole(shape.meta);
   const collapsed = readCollapsed(shape.meta);
 
-  // "Freshly placed" pulse — runs once on mount, then we drop the attribute
-  // so a re-render (e.g. resize) doesn't re-trigger the animation.
-  const [fresh, setFresh] = useState(true);
+  // "Freshly placed" pulse — only on the very first mount of a shape,
+  // identified by its id. Re-mounts (tldraw virtualisation, dev HMR)
+  // skip the pulse so cards don't strobe on scroll.
+  const [fresh, setFresh] = useState(() => !PULSED_SHAPE_IDS.has(shape.id));
   useEffect(() => {
+    if (!fresh) return undefined;
+    PULSED_SHAPE_IDS.add(shape.id);
     const t = setTimeout(() => setFresh(false), 1200);
     return () => clearTimeout(t);
-  }, []);
+  }, [fresh, shape.id]);
 
   const style: CSSProperties = { width: shape.props.w, height: shape.props.h };
   const sources = Array.isArray(shape.props.sources)

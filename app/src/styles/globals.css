@@ -2610,13 +2610,21 @@ header button:hover {
  * give it more vertical breathing room and a touch more weight.
  * ──────────────────────────────────────────────────────────────────*/
 .opencanvas-chat-input {
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
   font-size: 15px !important;
   line-height: 1.45 !important;
   min-height: 46px;
+  /* Auto-grow on Chromium 123+ / Safari 17.4+. Browsers without
+     field-sizing honor `rows={1}` and stay one line — no jank. */
+  field-sizing: content;
+  max-height: 220px;
+  overflow-y: auto;
+  /* The textarea inherits a fontFamily from the user-agent monospace
+     default; pull it back to the same Inter as the rest of the chat. */
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif !important;
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -2819,11 +2827,18 @@ header button:hover {
   50%      { transform: scale(0.6); opacity: 0.5; }
 }
 
-.opencanvas-generic-caret {
+/* Streaming caret — pinned inline to the end of the final paragraph
+   in a streaming markdown block so it reads as a typing cursor, not
+   an orphan glyph below the text. The selector targets whatever the
+   last block element happens to be (p, h1-h6, li, blockquote, …). */
+.opencanvas-markdown[data-streaming="true"] > :last-child::after {
+  content: '▍';
   display: inline-block;
-  margin-left: 1px;
+  margin-left: 2px;
   color: #c4b5fd;
   font-weight: 700;
+  font-size: 0.92em;
+  vertical-align: -0.05em;
   animation: opencanvas-generic-caret-blink 1.05s steps(2, jump-none) infinite;
 }
 @keyframes opencanvas-generic-caret-blink {

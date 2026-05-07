@@ -25,7 +25,9 @@ beforeEach(() => {
 describe('Chat sends canvasSnapshot', () => {
   it('includes canvasSnapshot in the request body when sending', async () => {
     const { container } = render(<Chat />);
-    const input = container.querySelector('input') as HTMLInputElement;
+    const input = container.querySelector(
+      'textarea.opencanvas-chat-input',
+    ) as HTMLTextAreaElement;
     fireEvent.change(input, { target: { value: 'hello' } });
 
     // The form/button to submit — find by Send icon's aria-label or fall back to form
@@ -65,7 +67,9 @@ describe('Chat sends canvasSnapshot', () => {
       ],
     });
 
-    const input = container.querySelector('input') as HTMLInputElement;
+    const input = container.querySelector(
+      'textarea.opencanvas-chat-input',
+    ) as HTMLTextAreaElement;
     fireEvent.change(input, { target: { value: 'hi' } });
     const form = container.querySelector('form') as HTMLFormElement;
     fireEvent.submit(form);

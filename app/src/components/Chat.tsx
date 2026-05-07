@@ -416,11 +416,40 @@ export function Chat() {
     }
   }, [error]);
 
-  // Auto-scroll to bottom when new content streams in.
+  // Auto-scroll to bottom — but ONLY when the user is already near
+  // the bottom. If they've scrolled up to read an older message we
+  // leave them alone instead of yanking them back down on every
+  // streamed chunk. Threshold is 96px so a small drift while typing
+  // counts as "still at the bottom."
+  const NEAR_BOTTOM_PX = 96;
+  const stickToBottomRef = useRef(true);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    const onScroll = () => {
+      const distanceFromBottom =
+        el.scrollHeight - el.clientHeight - el.scrollTop;
+      stickToBottomRef.current = distanceFromBottom <= NEAR_BOTTOM_PX;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!stickToBottomRef.current) return;
+    // Smooth on user-driven message arrival; instant during the
+    // initial paint so we don't see a scroll-from-top animation.
+    // jsdom (used by tests) doesn't implement scrollTo — fall back
+    // to direct scrollTop assignment there.
+    if (typeof el.scrollTo === 'function') {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: messages.length > 1 ? 'smooth' : 'auto',
+      });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   // Apply any directive that arrived in the stream to the tldraw canvas.
@@ -878,10 +907,24 @@ export function Chat() {
           const showOverlay = !input.trim() && liveStep !== null;
           return (
             <div className="opencanvas-chat-input-wrap flex-1 relative">
-              <input
-                type="text"
+              {/* Auto-growing textarea (was a one-line <input>). Grows
+                  up to a max-height set in CSS; submits on Enter,
+                  inserts a newline on Shift+Enter. Lets users paste
+                  multi-line content without squishing it into one row.
+                  field-sizing: content drives the grow on supporting
+                  browsers (Chromium 123+, Safari 17.4+); the rows=1
+                  fallback stays one line elsewhere — no jank. */}
+              <textarea
                 value={input}
+                rows={1}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    const form = (e.target as HTMLTextAreaElement).form;
+                    form?.requestSubmit();
+                  }
+                }}
                 placeholder={
                   showOverlay
                     ? ''
@@ -889,7 +932,7 @@ export function Chat() {
                 }
                 disabled={isStreaming}
                 data-busy={isStreaming || kbBusy ? 'true' : 'false'}
-                className="opencanvas-chat-input w-full px-4 py-2.5 rounded-xl bg-[var(--color-bg-2)] border border-white/8 text-zinc-100 placeholder-zinc-500 text-[14px] focus:outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/15 transition-all disabled:opacity-50"
+                className="opencanvas-chat-input w-full rounded-xl bg-[var(--color-bg-2)] border border-white/8 text-zinc-100 placeholder-zinc-500 focus:outline-none transition-colors disabled:opacity-50 resize-none"
               />
               {/* Live step rendered INSIDE the input where the placeholder
                   would otherwise be. Absolute-positioned over the input,
