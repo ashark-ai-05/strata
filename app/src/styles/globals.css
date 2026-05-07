@@ -27,13 +27,22 @@
   --glow-violet:     0 0 0 1px rgba(167,139,250,0.40), 0 8px 28px -8px rgba(167,139,250,0.45);
   --glow-fuchsia:    0 0 0 1px rgba(240,171,252,0.40), 0 8px 28px -8px rgba(240,171,252,0.45);
 
-  /* Role accents — the left-edge color on placed widgets. */
-  --role-primary:   #a78bfa;
-  --role-detail:    #60a5fa;
-  --role-related:   #2dd4bf;
-  --role-reference: #fbbf24;
-  --role-timeline:  #fb7185;
-  --role-node:      #34d399;
+  /* Role accents — punchier than before. Each role pairs a primary
+     hue with a "soft" mate used for backdrop tints + glows so the
+     same color reads strong on the stripe but gentle behind the
+     card body. Palette still legible on white in light mode. */
+  --role-primary:        #a78bfa;
+  --role-primary-soft:   rgba(167, 139, 250, 0.18);
+  --role-detail:         #60a5fa;
+  --role-detail-soft:    rgba(96, 165, 250, 0.18);
+  --role-related:        #2dd4bf;
+  --role-related-soft:   rgba(45, 212, 191, 0.18);
+  --role-reference:      #fbbf24;
+  --role-reference-soft: rgba(251, 191, 36, 0.18);
+  --role-timeline:       #fb7185;
+  --role-timeline-soft:  rgba(251, 113, 133, 0.18);
+  --role-node:           #34d399;
+  --role-node-soft:      rgba(52, 211, 153, 0.18);
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -67,6 +76,42 @@
 :root[data-theme='light'] ::selection {
   background: rgba(167, 139, 250, 0.4);
   color: #18181b;
+}
+
+/* Cards on a light canvas need a different glass recipe — white
+   surface with subtle dark inset, dark text, lighter shadow. The
+   role-tint header + aura still apply (role colors are bright
+   enough to read on white). */
+:root[data-theme='light'] .opencanvas-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(244, 244, 245, 0.92) 100%),
+    radial-gradient(
+      ellipse at top left,
+      var(--role-color-soft, var(--role-primary-soft)) 0%,
+      transparent 60%
+    );
+  background-blend-mode: multiply, normal;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--color-fg);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 24px -4px var(--role-color-soft, var(--role-primary-soft)),
+    0 12px 32px -10px rgba(0, 0, 0, 0.18),
+    0 2px 6px -1px rgba(0, 0, 0, 0.10);
+}
+:root[data-theme='light'] .opencanvas-card::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+}
+:root[data-theme='light'] .opencanvas-card:hover {
+  border-color: color-mix(in oklab, var(--role-color, var(--role-primary)) 55%, rgba(0, 0, 0, 0.10));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 36px -2px color-mix(in oklab, var(--role-color, var(--role-primary)) 35%, transparent),
+    0 24px 64px -16px rgba(0, 0, 0, 0.22),
+    0 6px 16px -4px rgba(0, 0, 0, 0.14);
+}
+:root[data-theme='light'] .opencanvas-card-header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
 @layer base {
@@ -129,39 +174,46 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 14px;
-  /* Brighter top → darker bottom gradient for a clearer "raised panel"
-     read against the deep canvas. Card surfaces had been almost
-     invisible against the bg before. */
-  background: linear-gradient(180deg, #20202a 0%, #14141b 100%);
+  /* Glassmorphism — semi-transparent surface + backdrop blur so the
+     canvas grain shows through, plus a top-down vertical gradient
+     for the "raised panel" cue. The role-color soft tint pulls the
+     card identity into its surface itself, not just the left stripe.
+     The default --role-color-soft falls back to primary's tint. */
+  background:
+    linear-gradient(180deg, rgba(38, 38, 50, 0.85) 0%, rgba(20, 20, 28, 0.85) 100%),
+    radial-gradient(
+      ellipse at top left,
+      var(--role-color-soft, var(--role-primary-soft)) 0%,
+      transparent 60%
+    );
+  background-blend-mode: screen, normal;
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
   color: var(--color-fg);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  /* Single inset highlight for a polished top edge; tighter drop
-     shadow for crisp edges at any zoom. The earlier two-stacked
-     inset shadow + 12px-spread blur fought each other and looked
-     muddy. */
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.07) inset,
-    0 8px 24px -8px rgba(0, 0, 0, 0.7),
-    0 2px 6px -2px rgba(0, 0, 0, 0.55);
+    /* Polished top edge */
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    /* Visible role-colored aura — the headline of the new look */
+    0 0 24px -4px var(--role-color-soft, var(--role-primary-soft)),
+    /* Crisp drop shadow */
+    0 12px 32px -10px rgba(0, 0, 0, 0.7),
+    0 2px 6px -1px rgba(0, 0, 0, 0.5);
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   font-feature-settings: 'cv11', 'ss01', 'ss03';
-  /* Crisper text rendering — geometricPrecision pins the layout to
-     ideal glyph metrics (no autohinting fuzz at non-1x tldraw zoom);
-     antialiased + grayscale stop the LCD-subpixel red/green fringe
-     bleeding through the dark background. */
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   pointer-events: all;
   transition:
-    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 200ms ease;
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 220ms ease;
 }
 
-/* Left-edge role accent — bolder + brighter glow than before. */
+/* Left-edge role accent — bolder stripe + stacked role glow. */
 .opencanvas-card::before {
   content: '';
   position: absolute;
@@ -169,41 +221,63 @@
   width: 3px;
   background: var(--role-color, var(--role-primary));
   box-shadow:
-    0 0 22px 0 var(--role-color, var(--role-primary)),
-    0 0 6px 0 var(--role-color, var(--role-primary));
+    0 0 24px 0 var(--role-color, var(--role-primary)),
+    0 0 8px 0 var(--role-color, var(--role-primary));
   opacity: 1;
+  z-index: 1;
 }
 
-/* Top sheen — bumped from 4% to 7% white so it actually shows. */
+/* Top sheen — readable highlight across the upper portion of the card. */
 .opencanvas-card::after {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 36%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, transparent 100%);
+  height: 38%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
   pointer-events: none;
 }
 
-.opencanvas-card[data-role="primary"]   { --role-color: var(--role-primary); }
-.opencanvas-card[data-role="detail"]    { --role-color: var(--role-detail); }
-.opencanvas-card[data-role="related"]   { --role-color: var(--role-related); }
-.opencanvas-card[data-role="reference"] { --role-color: var(--role-reference); }
-.opencanvas-card[data-role="timeline"]  { --role-color: var(--role-timeline); }
-.opencanvas-card[data-role="node"]      { --role-color: var(--role-node); }
+.opencanvas-card[data-role="primary"] {
+  --role-color: var(--role-primary);
+  --role-color-soft: var(--role-primary-soft);
+}
+.opencanvas-card[data-role="detail"] {
+  --role-color: var(--role-detail);
+  --role-color-soft: var(--role-detail-soft);
+}
+.opencanvas-card[data-role="related"] {
+  --role-color: var(--role-related);
+  --role-color-soft: var(--role-related-soft);
+}
+.opencanvas-card[data-role="reference"] {
+  --role-color: var(--role-reference);
+  --role-color-soft: var(--role-reference-soft);
+}
+.opencanvas-card[data-role="timeline"] {
+  --role-color: var(--role-timeline);
+  --role-color-soft: var(--role-timeline-soft);
+}
+.opencanvas-card[data-role="node"] {
+  --role-color: var(--role-node);
+  --role-color-soft: var(--role-node-soft);
+}
 
 .opencanvas-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-line-2);
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--role-color, var(--role-primary)) 45%, var(--color-line-2));
   box-shadow:
-    0 0 0 1px var(--color-line-2) inset,
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 18px 48px -16px rgba(0, 0, 0, 0.9),
-    0 4px 12px -2px rgba(0, 0, 0, 0.6),
-    0 0 0 1px color-mix(in oklab, var(--role-color, var(--role-primary)) 40%, transparent) inset;
+    /* Top edge highlight */
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    /* Brighter role-tinted aura — the "card knows you're hovering" cue */
+    0 0 36px -2px color-mix(in oklab, var(--role-color, var(--role-primary)) 45%, transparent),
+    /* Deeper drop shadow for the hover lift */
+    0 24px 64px -16px rgba(0, 0, 0, 0.9),
+    0 6px 16px -4px rgba(0, 0, 0, 0.65);
 }
 .opencanvas-card:hover::before {
-  box-shadow: 0 0 28px 0 var(--role-color, var(--role-primary));
-  opacity: 1;
+  box-shadow:
+    0 0 36px 0 var(--role-color, var(--role-primary)),
+    0 0 12px 0 var(--role-color, var(--role-primary));
 }
 
 .opencanvas-card-header {
@@ -213,6 +287,16 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  /* Soft role-tinted gradient across the header bar — pulls the card's
+     identity into the top region without competing with the content
+     below. Fades to transparent so the body stays neutral. */
+  background: linear-gradient(
+    90deg,
+    var(--role-color-soft, var(--role-primary-soft)) 0%,
+    transparent 65%
+  );
+  position: relative;
+  z-index: 1;
 }
 
 .opencanvas-card-title {
@@ -225,6 +309,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: -0.014em;
+  text-shadow: 0 0 14px color-mix(in oklab, var(--role-color, transparent) 18%, transparent);
 }
 
 .opencanvas-card-body {
@@ -248,20 +333,21 @@
 
 .opencanvas-tag {
   font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--color-muted);
-  border: 1px solid var(--color-line);
-  transition: background 200ms ease, border-color 200ms ease, color 200ms ease;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  background: var(--role-color-soft, rgba(255, 255, 255, 0.04));
+  color: var(--role-color, var(--color-muted));
+  border: 1px solid color-mix(in oklab, var(--role-color, var(--color-line-2)) 35%, transparent);
+  transition: background 200ms ease, border-color 200ms ease, color 200ms ease,
+    transform 200ms ease;
+  text-shadow: 0 0 10px color-mix(in oklab, var(--role-color, transparent) 35%, transparent);
 }
 .opencanvas-card:hover .opencanvas-tag {
-  background: rgba(167, 139, 250, 0.10);
-  border-color: rgba(167, 139, 250, 0.28);
-  color: #ddd6fe;
+  background: color-mix(in oklab, var(--role-color, var(--role-primary)) 22%, transparent);
+  border-color: color-mix(in oklab, var(--role-color, var(--role-primary)) 60%, transparent);
 }
 /* Tags inside a freshly-placed card slide-in subtly so they don't pop
    in stale during the card's pop animation. */
