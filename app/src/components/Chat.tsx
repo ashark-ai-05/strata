@@ -919,10 +919,58 @@ export function Chat() {
                 rows={1}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
+                  // Enter (no shift) submits; Shift+Enter inserts a newline.
                   if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     const form = (e.target as HTMLTextAreaElement).form;
                     form?.requestSubmit();
+                    return;
+                  }
+                  // Markdown shortcuts: Cmd/Ctrl + B/I/E/K wrap or
+                  // transform the current selection. Same idiom every
+                  // markdown editor uses (GitHub, Notion, Linear).
+                  const isMod = e.metaKey || e.ctrlKey;
+                  if (!isMod) return;
+                  const wrap = (
+                    open: string,
+                    close: string = open,
+                    placeholder = '',
+                  ) => {
+                    e.preventDefault();
+                    const ta = e.currentTarget;
+                    const start = ta.selectionStart ?? 0;
+                    const end = ta.selectionEnd ?? 0;
+                    const before = ta.value.slice(0, start);
+                    const sel = ta.value.slice(start, end) || placeholder;
+                    const after = ta.value.slice(end);
+                    const next = `${before}${open}${sel}${close}${after}`;
+                    setInput(next);
+                    // Restore selection around the inserted text on
+                    // the next tick (after React commits the value).
+                    requestAnimationFrame(() => {
+                      ta.focus();
+                      ta.setSelectionRange(
+                        before.length + open.length,
+                        before.length + open.length + sel.length,
+                      );
+                    });
+                  };
+                  const key = e.key.toLowerCase();
+                  if (key === 'b') return wrap('**', '**', 'bold');
+                  if (key === 'i') return wrap('_', '_', 'italic');
+                  if (key === 'e') return wrap('`', '`', 'code');
+                  if (key === 'k') {
+                    // Cmd+K is also the global palette hotkey, but we
+                    // only intercept here when the textarea is focused
+                    // AND there's a selection (otherwise let the
+                    // palette open as usual). Wraps the selection as
+                    // [text](url) with the cursor placed inside the
+                    // url so the user can paste.
+                    const ta = e.currentTarget;
+                    const hasSelection =
+                      (ta.selectionEnd ?? 0) > (ta.selectionStart ?? 0);
+                    if (!hasSelection) return;
+                    return wrap('[', '](url)');
                   }
                 }}
                 placeholder={

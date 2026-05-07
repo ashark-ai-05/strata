@@ -19,6 +19,7 @@ import {
   type WebRefreshSpec,
 } from './refresh-scheduler.js';
 import { WidgetRegistry } from './widget-registry.js';
+import { registerBuiltinWidgets } from './builtin-widgets.js';
 
 /**
  * Backend state. Constructed once at server start. Holds the
@@ -319,7 +320,13 @@ export class BackendState {
    */
   private widgetRegistry: WidgetRegistry | null = null;
   getWidgetRegistry(): WidgetRegistry {
-    if (!this.widgetRegistry) this.widgetRegistry = new WidgetRegistry();
+    if (!this.widgetRegistry) {
+      this.widgetRegistry = new WidgetRegistry();
+      // Built-in plugins (chart, etc.) are registered before any
+      // external POSTs so they're always available — even when the
+      // backend boots cold and no third-party plugin has registered.
+      registerBuiltinWidgets(this.widgetRegistry);
+    }
     return this.widgetRegistry;
   }
 
