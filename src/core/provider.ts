@@ -78,6 +78,17 @@ export type QueryRequest = {
    * avoid a circular import on src/backend.
    */
   widgetRegistry?: unknown;
+  /**
+   * Per-conversation preference counters from the browser's
+   * preferences store: `byKind: Record<kind, {placed, deleted, pinned}>`.
+   * The provider summarises top-preferred / top-avoided kinds and
+   * appends a hint to the system prompt so the agent biases future
+   * placements. Empty / undefined when the conversation has no
+   * accumulated signal yet.
+   */
+  userPreferences?: {
+    byKind?: Record<string, { placed: number; deleted: number; pinned: number }>;
+  };
 };
 
 export type ProbeResult = {

@@ -29,6 +29,7 @@ import { useCanvasStats } from '../state/canvas-stats-store';
 import { useConversationsStore } from '../state/conversations-store';
 import { useThemeStore, tldrawColorSchemeFor } from '../state/theme-store';
 import { useCanvasHistory } from '../state/canvas-history-store';
+import { usePreferences } from '../state/preferences-store';
 // SearchBar + TemplatePicker removed: all searches now flow through the
 // floating chat (the agent runs search_kb, plus a parallel /v1/search
 // call surfaces inline KB hits via <KbHits />). Templates are switched
@@ -105,8 +106,27 @@ export function Canvas() {
       // The same debounce drives history capture so a 30s typing burst
       // becomes one history entry, not 60.
       useCanvasHistory.getState().hydrate(activeId);
+      usePreferences.getState().hydrate(activeId);
       let lastHistoryAt = 0;
       const HISTORY_MIN_GAP_MS = 8_000;
+      // Track of opencanvas:* shape ids → kind so we can detect adds
+      // and removes between store ticks. Initial population on mount
+      // so we don't count pre-existing shapes (loaded from snapshot)
+      // as fresh placements.
+      const knownShapeKinds = new Map<string, string>();
+      const seedKinds = () => {
+        knownShapeKinds.clear();
+        for (const s of editor.getCurrentPageShapes() as Array<{
+          id: string;
+          type: string;
+        }>) {
+          if (s.type.startsWith('opencanvas:')) {
+            knownShapeKinds.set(s.id, s.type.replace(/^opencanvas:/, ''));
+          }
+        }
+      };
+      seedKinds();
+
       editor.store.listen(() => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
@@ -121,6 +141,31 @@ export function Canvas() {
             lastHistoryAt = now;
           }
         }, SAVE_DEBOUNCE_MS);
+
+        // Diff opencanvas:* shapes against the known set so we can
+        // increment placed/deleted counters in the preferences store.
+        // Hooks into the SAME listener as the snapshot save so we
+        // don't pay a second store subscription tax. Pinning is
+        // tracked separately via CardActions' togglePin.
+        const prefs = usePreferences.getState();
+        const live = new Map<string, string>();
+        for (const s of editor.getCurrentPageShapes() as Array<{
+          id: string;
+          type: string;
+        }>) {
+          if (!s.type.startsWith('opencanvas:')) continue;
+          live.set(s.id, s.type.replace(/^opencanvas:/, ''));
+        }
+        // Newly-arrived shapes (in live, not in known) → placed.
+        for (const [id, kind] of live) {
+          if (!knownShapeKinds.has(id)) prefs.record(activeId, kind, 'placed');
+        }
+        // Vanished shapes (in known, not in live) → deleted.
+        for (const [id, kind] of knownShapeKinds) {
+          if (!live.has(id)) prefs.record(activeId, kind, 'deleted');
+        }
+        knownShapeKinds.clear();
+        for (const [id, kind] of live) knownShapeKinds.set(id, kind);
       });
 
       // Publish a canvas snapshot into the singleton ref so Chat (rendered

@@ -23,6 +23,7 @@ import { EmptyChatBanner } from './EmptyChatBanner';
 import { useChatActions } from '../state/chat-actions-store';
 import { useConversationsStore } from '../state/conversations-store';
 import { useKbStats } from '../state/kb-stats-store';
+import { usePreferences } from '../state/preferences-store';
 import { useUiStore } from '../state/ui-store';
 import type {
   ToolDirective,
@@ -351,7 +352,15 @@ export function Chat() {
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: '/v1/chat',
-      body: () => ({ canvasSnapshot: getLatestSnapshot() }),
+      body: () => ({
+        canvasSnapshot: getLatestSnapshot(),
+        // Send the user's accumulated preferences so the chat route
+        // can append a "User preferences" hint to the system prompt.
+        // Empty when the conversation has no signal yet — backend
+        // skips the section in that case.
+        userPreferences: usePreferences.getState().byConversation[activeId],
+        conversationId: activeId,
+      }),
       // Per-call URL override: the /team slash command sets metadata.route='team'
       // and we redirect to /v1/team. Default routing stays on /v1/chat.
       prepareSendMessagesRequest: ({ messages: msgs, requestMetadata, body, headers, credentials }) => {

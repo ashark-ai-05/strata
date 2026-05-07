@@ -325,6 +325,7 @@ export function CardActions({
       | undefined;
     if (!cur) return;
     const meta = { ...(cur.meta ?? {}) };
+    const willBePinned = !pinned;
     if (pinned) {
       delete (meta as { pinned?: unknown }).pinned;
     } else {
@@ -335,6 +336,19 @@ export function CardActions({
       type: cur.type as never,
       meta: meta as never,
     } as never);
+    // Record the pin signal in the preferences store. Only counted
+    // on the pin direction (not on unpin) — the gesture we care about
+    // is "user actively decided this is worth keeping." Lazy-imported
+    // to avoid a top-level circular dep with state/conversations-store.
+    if (willBePinned && shape.type) {
+      const kind = shape.type.replace(/^opencanvas:/, '');
+      void import('../../state/preferences-store').then((m) => {
+        void import('../../state/conversations-store').then((c) => {
+          const conv = c.useConversationsStore.getState().activeId;
+          if (conv) m.usePreferences.getState().record(conv, kind, 'pinned');
+        });
+      });
+    }
   };
 
   return (

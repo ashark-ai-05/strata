@@ -3,6 +3,7 @@ import { stream } from 'hono/streaming';
 import { providerEventsToUIMS, UIMS_HEADERS } from '../uims-stream.js';
 import { parseCanvasSnapshot } from '../../agent/canvas-snapshot.js';
 import { WidgetStreamBus } from '../../agent/widget-stream-bus.js';
+import { buildPreferencesHint } from '../../agent/preferences-hint.js';
 import type { BackendState } from '../state.js';
 import type { HistoryMessage, ProviderEvent } from '../../core/provider.js';
 
@@ -95,13 +96,28 @@ export function chatRoute(state: BackendState): Hono {
       messages?: UIChatMessage[];
       canvasSnapshot?: unknown;
       conversationId?: string;
+      userPreferences?: {
+        byKind?: Record<
+          string,
+          { placed: number; deleted: number; pinned: number }
+        >;
+      };
     };
 
     if (!Array.isArray(body.messages) || body.messages.length === 0) {
       return c.json({ error: 'messages must be a non-empty array' }, 400);
     }
 
-    const { prompt, history, systemPrompt } = splitMessages(body.messages);
+    const { prompt, history, systemPrompt: rawSystemPrompt } = splitMessages(body.messages);
+    // Append the preferences hint to whatever system prompt the
+    // upstream messages provided. Hint is empty when there's no
+    // signal yet (new conversation), so this is safe to always run.
+    const prefHint = buildPreferencesHint(body.userPreferences);
+    const systemPrompt = prefHint
+      ? rawSystemPrompt
+        ? `${rawSystemPrompt}\n\n${prefHint}`
+        : prefHint
+      : rawSystemPrompt;
     if (!prompt.trim()) {
       return c.json({ error: 'last user message has no text content' }, 400);
     }
