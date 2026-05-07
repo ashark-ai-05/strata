@@ -208,7 +208,7 @@ GET    /v1/canvas/events?conversationId    # SSE — browser → backend
 ### Place a widget from any process
 
 ```bash
-curl -s -X POST http://localhost:3032/v1/canvas/widgets \
+curl -s -X POST http://localhost:3457/v1/canvas/widgets \
   -H 'content-type: application/json' \
   -d '{
     "kind": "markdown",
@@ -222,7 +222,7 @@ curl -s -X POST http://localhost:3032/v1/canvas/widgets \
 ```python
 import requests, time
 
-BASE = "http://localhost:3032/v1/canvas"
+BASE = "http://localhost:3457/v1/canvas"
 
 # 1) open a stream — returns the widget id
 r = requests.post(f"{BASE}/streams", json={
