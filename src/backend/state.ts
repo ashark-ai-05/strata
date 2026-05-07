@@ -11,6 +11,7 @@ import type { EmbeddingProvider } from '../core/embedding-provider.js';
 import type { AgentToolDeps } from '../agent/tools/index.js';
 import type { ExternalMcpSource } from '../providers/claude-agent-sdk.js';
 import type { CanvasSnapshot } from '../agent/canvas-snapshot.js';
+import { CanvasEventBus } from './canvas-event-bus.js';
 
 /**
  * Backend state. Constructed once at server start. Holds the
@@ -203,6 +204,55 @@ export class BackendState {
     if (!bus) return false;
     bus.cancel(widgetId);
     return true;
+  }
+
+  /**
+   * Per-conversation CanvasEventBus registry. Created lazily on first
+   * subscribe / first push. External REST callers push directives into
+   * the bus; browser SSE subscribers drain.
+   *
+   * Buses are NOT torn down when the last subscriber closes — events
+   * pushed during a "no listener" gap are buffered and delivered on
+   * the next subscribe. Memory is bounded by traffic, not subscribers.
+   */
+  private canvasEventBuses = new Map<string, CanvasEventBus>();
+  getCanvasEventBus(conversationId: string): CanvasEventBus {
+    let bus = this.canvasEventBuses.get(conversationId);
+    if (!bus) {
+      bus = new CanvasEventBus();
+      this.canvasEventBuses.set(conversationId, bus);
+    }
+    return bus;
+  }
+  /**
+   * Per-stream sequence counter for external streams (the agent's own
+   * stream_widget tool tracks its own seq via WidgetStreamBus). Keyed
+   * by widget id; deleted on stream-end. External callers POST ops
+   * one at a time without threading their own seq, so the route
+   * assigns the next value here.
+   */
+  private externalStreamSeqs = new Map<string, number>();
+  nextExternalStreamSeq(widgetId: string): number {
+    const next = (this.externalStreamSeqs.get(widgetId) ?? 0) + 1;
+    this.externalStreamSeqs.set(widgetId, next);
+    return next;
+  }
+  endExternalStream(widgetId: string): void {
+    this.externalStreamSeqs.delete(widgetId);
+  }
+
+  /**
+   * Conversation id the browser most-recently said it was looking at.
+   * External callers can omit `conversationId` from POSTs and the
+   * route falls back to this. Updated by browser via POST /v1/canvas/
+   * active-conversation on every conversation switch.
+   */
+  private activeConversationId: string | null = null;
+  setActiveConversationId(id: string | null): void {
+    this.activeConversationId = id;
+  }
+  getActiveConversationId(): string | null {
+    return this.activeConversationId;
   }
 
   getLatestSnapshot(): CanvasSnapshot | null {

@@ -9,6 +9,7 @@ import { searchRoute } from './routes/search.js';
 import { indexConversationRoute } from './routes/index-conversation.js';
 import { teamRoute } from './routes/team.js';
 import { sourcesListRoute } from './routes/sources-list.js';
+import { canvasRoute } from './routes/canvas.js';
 
 /**
  * The Hono app. Tests can hit `app.request(path)` directly without
@@ -187,11 +188,27 @@ app.post('/v1/query', async (c) => {
 
 // Chat (AI SDK 6 UI Message Stream protocol) — used by the React app's useChat hook.
 // For OpenAI-compat callers, use /v1/query/openai instead.
+// chatRoute also serves POST /v1/cancel-stream/:id; mount with .all() so
+// every path the sub-app declares is reachable, not just /v1/chat.
 {
   const lazyApp = new Hono();
-  lazyApp.post('/v1/chat', async (c) => {
+  const handler = async (c: import('hono').Context) => {
     const state = await getState();
     const sub = chatRoute(state);
+    return sub.fetch(c.req.raw);
+  };
+  lazyApp.post('/v1/chat', handler);
+  lazyApp.post('/v1/cancel-stream/:id', handler);
+  app.route('/', lazyApp);
+}
+
+// /v1/canvas/* — external app surface. Long-lived SSE for browser
+// subscribers + REST for mutations. See routes/canvas.ts.
+{
+  const lazyApp = new Hono();
+  lazyApp.all('/v1/canvas/*', async (c) => {
+    const state = await getState();
+    const sub = canvasRoute(state);
     return sub.fetch(c.req.raw);
   });
   app.route('/', lazyApp);

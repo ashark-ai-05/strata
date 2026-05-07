@@ -93,6 +93,15 @@ export type ToolDirective =
     }
   | { type: 'focus'; id: string }
   | { type: 'clear' }
+  | {
+      /**
+       * Delete one widget by id. Used by external apps to remove a
+       * specific widget without clearing the entire canvas. Internal
+       * tool path uses `clear` (removes all opencanvas:* shapes).
+       */
+      type: 'remove';
+      id: string;
+    }
   | { type: 'switchTemplate'; id: TemplateId }
   | {
       /**

@@ -174,6 +174,93 @@ Conversations index back into the same store automatically after every assistant
 
 ---
 
+## Drive the canvas from any app — `/v1/canvas/*` REST surface
+
+Any process on the local machine can render widgets on a running OpenCanvas instance via HTTP. The browser keeps a long-lived SSE open to `/v1/canvas/events`; external `POST`s push directives into the per-conversation event bus, which fans out to every connected tab.
+
+**Auth.** Optional. If `OPENCANVAS_API_KEY` is set in the backend's environment, every `/v1/canvas/*` request must include `Authorization: Bearer <key>`. Unset → no auth (dev default).
+
+**Conversation routing.** Each request takes an optional `conversationId` (in body or query). When omitted, the backend uses whichever conversation the browser most-recently said it was on (mirrored on every conversation switch). 404 if neither is set.
+
+### Endpoints
+
+```
+POST   /v1/canvas/widgets                  { kind, role, payload, conversationId? } → { id, directive }
+PATCH  /v1/canvas/widgets/:id              { payload? | appendSections? }
+POST   /v1/canvas/widgets/:id/focus
+DELETE /v1/canvas/widgets/:id
+POST   /v1/canvas/clear
+POST   /v1/canvas/links                    { fromId, toId, label? } → { linkId }
+POST   /v1/canvas/template                 { id }
+GET    /v1/canvas/snapshot                 → { activeTemplateId, widgets[] }
+
+POST   /v1/canvas/streams                  { kind, role, scaffold } → { id }
+POST   /v1/canvas/streams/:id/ops          { ops: WidgetStreamOp[] }     # seq auto-assigned
+POST   /v1/canvas/streams/:id/end          { ok, error? }
+POST   /v1/canvas/streams/:id/cancel
+
+POST   /v1/canvas/active-conversation      { conversationId }            # browser → backend hint
+GET    /v1/canvas/events?conversationId    # SSE — browser → backend
+```
+
+`kind` accepts any registered widget kind (`markdown`, `code-block`, `ticket`, `web-embed`, `key-value-card`, `table`, `timeline`, `file-tree`, `composite`, `tasks`, `kanban`, `sticky-note`, `time`, `generic`). Unknown kinds and malformed payloads auto-classify into a `generic` widget — the response includes `reformatted: { from, reason }` so the caller can see what was rewritten.
+
+### Place a widget from any process
+
+```bash
+curl -s -X POST http://localhost:3032/v1/canvas/widgets \
+  -H 'content-type: application/json' \
+  -d '{
+    "kind": "markdown",
+    "role": "primary",
+    "payload": { "title": "From outside", "body": "**Hello** from curl." }
+  }'
+```
+
+### Stream a long markdown answer from a Python script
+
+```python
+import requests, time
+
+BASE = "http://localhost:3032/v1/canvas"
+
+# 1) open a stream — returns the widget id
+r = requests.post(f"{BASE}/streams", json={
+    "kind": "generic", "role": "primary",
+    "scaffold": {
+        "title": "Streaming from Python",
+        "blocks": [{"type": "markdown", "content": ""}],
+    },
+}).json()
+wid = r["id"]
+
+# 2) push paragraphs as they're produced
+for paragraph in long_answer_generator():
+    requests.post(f"{BASE}/streams/{wid}/ops", json={
+        "ops": [{"kind": "append-text", "blockIndex": 0, "text": paragraph + "\n\n"}],
+    })
+    time.sleep(0.05)
+
+# 3) close cleanly
+requests.post(f"{BASE}/streams/{wid}/end", json={"ok": True})
+```
+
+### Listen for events from another browser/script (SSE)
+
+```javascript
+const es = new EventSource(
+  '/v1/canvas/events?conversationId=' + encodeURIComponent(activeId),
+);
+es.addEventListener('directive', (ev) => {
+  const directive = JSON.parse(ev.data);
+  console.log('canvas event', directive);
+});
+```
+
+The directive shape is the same `ToolDirective` union the in-process agent uses (`place`, `update`, `focus`, `clear`, `remove`, `link`, `switchTemplate`, `stream-{start,op,end}`). Subscribers can build dashboards, recorders, or alternate frontends from the same firehose.
+
+---
+
 ## Development
 
 ```bash

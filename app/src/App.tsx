@@ -18,6 +18,7 @@ import { useChatActions } from './state/chat-actions-store';
 import { useConversationsStore } from './state/conversations-store';
 import { useKbStats } from './state/kb-stats-store';
 import { useUiStore } from './state/ui-store';
+import { useCanvasExternalEvents } from './state/canvas-events';
 
 /**
  * Top-level layout — full-bleed canvas with a glass header on top and a
@@ -44,6 +45,12 @@ export function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+
+  // Subscribe to /v1/canvas/events so any external app can drive
+  // widgets on this canvas via the REST surface. The hook also
+  // POSTs the active conversationId to the backend on every switch
+  // so external callers can omit it.
+  useCanvasExternalEvents();
 
   // Hydrate KB chunk total on mount so the header badge shows a real
   // number from frame zero. Subsequent updates come from the

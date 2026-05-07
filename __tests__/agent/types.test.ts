@@ -69,6 +69,7 @@ describe('agent/types', () => {
       { type: 'link', linkId: 'l-1', fromId: 'w-1', toId: 'w-2' },
       { type: 'focus', id: 'w-1' },
       { type: 'clear' },
+      { type: 'remove', id: 'w-2' },
       { type: 'switchTemplate', id: 'ask-anything' },
       {
         type: 'stream-start',
@@ -103,6 +104,9 @@ describe('agent/types', () => {
         case 'clear':
           seen.add('clear');
           break;
+        case 'remove':
+          seen.add('remove');
+          break;
         case 'switchTemplate':
           seen.add('switchTemplate');
           break;
@@ -123,6 +127,6 @@ describe('agent/types', () => {
         }
       }
     }
-    expect(seen.size).toBe(9);
+    expect(seen.size).toBe(10);
   });
 });

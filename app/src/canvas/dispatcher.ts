@@ -255,6 +255,17 @@ export function applyToolDirective(
       if (ids.length > 0) editor.deleteShapes(ids as never[]);
       return;
     }
+    case 'remove': {
+      const shapeId = ('shape:' + directive.id) as never;
+      const shape = editor.getShape(shapeId);
+      if (shape) editor.deleteShapes([shapeId] as never[]);
+      // Drop any pending stream buffer for this id — if the user
+      // deletes a widget mid-stream, the next op flush would target
+      // a missing shape (already silently dropped, but cleaner to
+      // discard the pending queue here).
+      streams.delete(directive.id);
+      return;
+    }
     case 'switchTemplate': {
       useTemplateStore.getState().setActiveTemplateId(directive.id);
       return;
