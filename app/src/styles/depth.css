@@ -18,17 +18,17 @@
 :root {
   /* Depth scale */
   --depth-1-shadow:
-    0 1px 2px -1px rgb(0 0 0 / 0.30);
+    0 1px 2px -1px rgb(0 0 0 / 0.40);
   --depth-2-shadow:
-    0 4px 16px -6px rgb(0 0 0 / 0.40),
-    0 0 0 1px rgb(255 255 255 / 0.04) inset;
+    0 4px 12px -4px rgb(0 0 0 / 0.50),
+    0 0 0 1px rgb(255 255 255 / 0.07) inset;
   --depth-3-shadow:
-    0 12px 32px -10px rgb(0 0 0 / 0.50),
-    0 0 0 1px rgb(255 255 255 / 0.05) inset;
+    0 10px 26px -8px rgb(0 0 0 / 0.60),
+    0 0 0 1px rgb(255 255 255 / 0.08) inset;
   --depth-4-shadow:
     0 22px 48px -14px rgb(0 0 0 / 0.55),
-    0 0 24px -6px color-mix(in oklab, var(--role-color-soft, var(--role-primary-soft)) 70%, transparent),
-    0 0 0 1px rgb(255 255 255 / 0.08) inset;
+    0 0 36px -2px var(--role-color-soft, var(--role-primary-soft)),
+    0 0 0 1px rgb(255 255 255 / 0.10) inset;
 
   /* Blur scale */
   --blur-thin:   blur(14px) saturate(140%);

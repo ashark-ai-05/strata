@@ -10,8 +10,8 @@
   --color-bg:       #0a0a0c;     /* neutral near-black */
   --color-bg-2:     #131318;     /* surfaces / panels */
   --color-bg-3:     #1c1c22;     /* cards (true neutral, was violet-tinted) */
-  --color-line:     rgba(255, 255, 255, 0.13);
-  --color-line-2:   rgba(255, 255, 255, 0.18);
+  --color-line:     rgba(255, 255, 255, 0.18);
+  --color-line-2:   rgba(255, 255, 255, 0.26);
   /* Glass-surface RGB triplet — used inside rgba() for panels / popovers
      / chat shell so they tint to the theme. Per-theme overrides swap
      this to the appropriate background color (e.g. white in light
@@ -48,17 +48,17 @@
      18% alpha for backdrop tints (header gradient, card aura) so
      they bleed into the surface without overwhelming the body. */
   --role-primary:        #a78bfa;     /* violet  */
-  --role-primary-soft:   rgba(167, 139, 250, 0.18);
+  --role-primary-soft:   rgba(167, 139, 250, 0.26);
   --role-detail:         #60a5fa;     /* blue    */
-  --role-detail-soft:    rgba(96, 165, 250, 0.18);
+  --role-detail-soft:    rgba(96, 165, 250, 0.26);
   --role-related:        #2dd4bf;     /* teal    */
-  --role-related-soft:   rgba(45, 212, 191, 0.18);
+  --role-related-soft:   rgba(45, 212, 191, 0.26);
   --role-reference:      #fbbf24;     /* amber   */
-  --role-reference-soft: rgba(251, 191, 36, 0.18);
+  --role-reference-soft: rgba(251, 191, 36, 0.26);
   --role-timeline:       #fb7185;     /* rose    */
-  --role-timeline-soft:  rgba(251, 113, 133, 0.18);
+  --role-timeline-soft:  rgba(251, 113, 133, 0.26);
   --role-node:           #34d399;     /* emerald */
-  --role-node-soft:      rgba(52, 211, 153, 0.18);
+  --role-node-soft:      rgba(52, 211, 153, 0.26);
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -190,8 +190,8 @@
        once content is placed; the ambient remains visible through the chrome
        gaps + behind translucent panels. */
     background:
-      radial-gradient(ellipse 70% 60% at 25% 20%, rgba(167, 139, 250, 0.07), transparent 70%),
-      radial-gradient(ellipse 65% 55% at 80% 90%, rgba(45, 212, 191, 0.05), transparent 70%),
+      radial-gradient(ellipse 70% 60% at 25% 20%, rgba(167, 139, 250, 0.16), transparent 70%),
+      radial-gradient(ellipse 65% 55% at 80% 90%, rgba(45, 212, 191, 0.11), transparent 70%),
       var(--color-bg);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
@@ -247,7 +247,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 10px;
   /* Glassmorphism — neutral charcoal surface (was violet-tinted at
      38,38,50 → made everything feel "default-violet"). The role
      color now comes ENTIRELY from the radial tint at top-left, not
@@ -265,11 +265,12 @@
   -webkit-backdrop-filter: var(--blur-medium);
   color: var(--color-fg);
   border: 1px solid var(--color-line);
-  /* depth-2 + faint resting role rim — bridges the contrast gap to depth-4
-     on hover so cards always show their role identity, not flat-then-flash. */
+  /* depth-2 + visible resting role rim — cards always show their role
+     identity, not flat-then-flash. 70% mix gives a clear color signature
+     at rest; hover then amplifies (depth-4) without state-flipping. */
   box-shadow:
     var(--depth-2-shadow),
-    0 0 14px -6px color-mix(in oklab, var(--role-color-soft, var(--role-primary-soft)) 35%, transparent);
+    0 0 18px -6px color-mix(in oklab, var(--role-color-soft, var(--role-primary-soft)) 70%, transparent);
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
