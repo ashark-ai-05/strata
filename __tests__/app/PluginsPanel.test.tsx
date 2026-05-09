@@ -98,4 +98,10 @@ describe('<PluginsPanel>', () => {
     // QR code still appears in examples
     expect(screen.getByText('QR Code')).toBeInTheDocument();
   });
+
+  it('lists python-repl and js-repl in the available examples', () => {
+    render(<PluginsPanel open onClose={vi.fn()} />);
+    expect(screen.getByText('Python REPL')).toBeInTheDocument();
+    expect(screen.getByText('JavaScript REPL')).toBeInTheDocument();
+  });
 });
