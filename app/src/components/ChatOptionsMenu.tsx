@@ -43,7 +43,6 @@ export function ChatOptionsMenu() {
       </button>
       {open && (
         <div
-          className="opencanvas-glass"
           role="menu"
           style={{
             position: 'absolute',
@@ -52,8 +51,17 @@ export function ChatOptionsMenu() {
             minWidth: 192,
             padding: 6,
             borderRadius: 10,
-            boxShadow: '0 16px 40px -12px rgba(0,0,0,0.6)',
-            zIndex: 10,
+            // Near-opaque so chat content underneath doesn't bleed through
+            // the menu (was via .opencanvas-glass at 0.62, too sheer).
+            // --color-glass-rgb is theme-aware (dark/midnight/sunset/mono).
+            background: 'rgb(var(--color-glass-rgb) / 0.96)',
+            border: '1px solid var(--color-line-2)',
+            backdropFilter: 'var(--blur-medium)',
+            WebkitBackdropFilter: 'var(--blur-medium)',
+            boxShadow: 'var(--depth-3-shadow)',
+            // Above .opencanvas-chat-floating (zIndex implicit ~5) and any
+            // glass surfaces below it. Below DepthPanel backdrops (z=50/51).
+            zIndex: 40,
           }}
         >
           <MenuRow
