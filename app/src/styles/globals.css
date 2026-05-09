@@ -247,7 +247,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 12px;
   /* Glassmorphism — neutral charcoal surface (was violet-tinted at
      38,38,50 → made everything feel "default-violet"). The role
      color now comes ENTIRELY from the radial tint at top-left, not
@@ -265,7 +265,11 @@
   -webkit-backdrop-filter: var(--blur-medium);
   color: var(--color-fg);
   border: 1px solid var(--color-line);
-  box-shadow: var(--depth-2-shadow);
+  /* depth-2 + faint resting role rim — bridges the contrast gap to depth-4
+     on hover so cards always show their role identity, not flat-then-flash. */
+  box-shadow:
+    var(--depth-2-shadow),
+    0 0 14px -6px color-mix(in oklab, var(--role-color-soft, var(--role-primary-soft)) 35%, transparent);
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;

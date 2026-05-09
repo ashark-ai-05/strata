@@ -27,7 +27,7 @@
     0 0 0 1px rgb(255 255 255 / 0.05) inset;
   --depth-4-shadow:
     0 22px 48px -14px rgb(0 0 0 / 0.55),
-    0 0 32px -4px var(--role-color-soft, var(--role-primary-soft)),
+    0 0 24px -6px color-mix(in oklab, var(--role-color-soft, var(--role-primary-soft)) 70%, transparent),
     0 0 0 1px rgb(255 255 255 / 0.08) inset;
 
   /* Blur scale */
