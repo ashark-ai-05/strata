@@ -395,7 +395,7 @@ function TimeControls({
         onClick={togglePlay}
         title={running ? 'Pause' : 'Start'}
       >
-        {running ? <Pause className="size-3" /> : <Play className="size-3" />}
+        {running ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
       </button>
       <button
         type="button"
@@ -403,7 +403,7 @@ function TimeControls({
         onClick={reset}
         title="Reset"
       >
-        <RotateCcw className="size-3" />
+        <RotateCcw className="size-3.5" />
       </button>
       {canSkip && onSkip && (
         <button
@@ -412,7 +412,7 @@ function TimeControls({
           onClick={onSkip}
           title="Skip phase"
         >
-          <SkipForward className="size-3" />
+          <SkipForward className="size-3.5" />
         </button>
       )}
     </div>
