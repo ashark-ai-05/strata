@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreHorizontal, History, Database, Sparkles, Eraser } from 'lucide-react';
 import { useUiStore } from '../state/ui-store';
 
@@ -9,27 +10,61 @@ import { useUiStore } from '../state/ui-store';
  *   - Open sources panel
  *   - Open MCP sources panel (added in Polish D)
  *
+ * Portaled to document.body so the menu escapes the titlebar's 3D
+ * stacking context (titlebar has `transformPerspective + rotateX/Y`
+ * from useParallax — without portaling, the menu inherits the tilt
+ * and stays trapped at z-40 inside the titlebar's stacking context,
+ * which traps clicks and lets chat content visually bleed through).
+ *
  * Spec: REPLICATION-PROMPT.md §13 — `ChatOptionsMenu`.
  */
 export function ChatOptionsMenu() {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [coords, setCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const setSourcesOpen = useUiStore((s) => s.setSourcesOpen);
 
+  // Compute viewport-relative position from the trigger button's rect
+  // each time the menu opens. Re-run on scroll/resize while open.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 6, // 6px gap below the trigger
+        right: window.innerWidth - rect.right, // pin menu right-edge to trigger's right-edge
+      });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  // Click-outside: dismiss when the user clicks anywhere that isn't the
+  // trigger or the menu itself. mousedown (not click) so we close before
+  // a competing focus shift happens.
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <>
       <button
+        ref={triggerRef}
         type="button"
         className="opencanvas-chat-titlebar-btn"
         title="More"
@@ -41,27 +76,26 @@ export function ChatOptionsMenu() {
       >
         <MoreHorizontal className="size-3.5" />
       </button>
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
+          ref={menuRef}
           role="menu"
           style={{
-            position: 'absolute',
-            top: '110%',
-            right: 0,
+            position: 'fixed',
+            top: coords.top,
+            right: coords.right,
             minWidth: 192,
             padding: 6,
             borderRadius: 10,
-            // Near-opaque so chat content underneath doesn't bleed through
-            // the menu (was via .opencanvas-glass at 0.62, too sheer).
-            // --color-glass-rgb is theme-aware (dark/midnight/sunset/mono).
+            // Near-opaque so anything underneath doesn't bleed through.
             background: 'rgb(var(--color-glass-rgb) / 0.96)',
             border: '1px solid var(--color-line-2)',
             backdropFilter: 'var(--blur-medium)',
             WebkitBackdropFilter: 'var(--blur-medium)',
             boxShadow: 'var(--depth-3-shadow)',
-            // Above .opencanvas-chat-floating (zIndex implicit ~5) and any
-            // glass surfaces below it. Below DepthPanel backdrops (z=50/51).
-            zIndex: 40,
+            // Above DepthPanel backdrops (50) + asides (51) so the menu
+            // sits on top of any open drawer too.
+            zIndex: 60,
           }}
         >
           <MenuRow
@@ -99,9 +133,10 @@ export function ChatOptionsMenu() {
               window.dispatchEvent(new Event('opencanvas:clear-chat'));
             }}
           />
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
