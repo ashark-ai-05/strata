@@ -140,19 +140,18 @@ describe('register_widget_kind tool', () => {
     const data = JSON.parse(result.content[0]!.text!);
     expect(data.ok).toBe(true);
     expect(data.descriptor.kind).toBe('crypto-bubbles');
-    // The placement directive comes back so the dispatcher places it on the canvas.
+    // placed envelope: id + kind + pluginKind + role.
+    // Full directive with payload.props is omitted — the frontend dispatcher
+    // only reads top-level `directive`, so placed.directive was never
+    // dispatched. Omitting props avoids echoing the agent's own input
+    // (token savings for large payloads).
     expect(data.placed).toBeDefined();
     expect(data.placed.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(data.placed.directive.type).toBe('place');
-    expect(data.placed.directive.kind).toBe('plugin');
-    expect(data.placed.directive.role).toBe('primary');
-    expect(data.placed.directive.payload.pluginKind).toBe('crypto-bubbles');
-    expect(data.placed.directive.payload.props).toEqual({
-      coins: ['BTC', 'ETH'],
-      title: 'Top crypto',
-    });
-    // Title hoisted from props (used by card header).
-    expect(data.placed.directive.payload.title).toBe('Top crypto');
+    expect(data.placed.kind).toBe('plugin');
+    expect(data.placed.pluginKind).toBe('crypto-bubbles');
+    expect(data.placed.role).toBe('primary');
+    // directive and props are no longer echoed.
+    expect(data.placed.directive).toBeUndefined();
     // Registry should contain it too.
     expect(registry.get('crypto-bubbles')).toBeDefined();
   });

@@ -118,17 +118,13 @@ export function registerWidgetKindTool(
       if (args.instance) {
         const placeId = randomUUID();
         const inner = args.instance.payload;
-        const placeDirective = {
-          type: 'place' as const,
-          id: placeId,
-          kind: 'plugin' as const,
-          role: args.instance.role,
-          payload: {
-            pluginKind: descriptor.kind,
-            props: inner,
-            ...(typeof inner['title'] === 'string' ? { title: inner['title'] } : {}),
-          },
-        };
+        // NOTE: The placed.directive is NOT parsed by the frontend dispatcher
+        // (parseToolOutput in Chat.tsx only checks top-level `directive`).
+        // The instance placement is handled server-side by the agent calling
+        // place_widget after registration when needed. We emit the minimal
+        // envelope the agent needs: id (for chaining) and kind/role (for
+        // context). Props are omitted — they echo the agent's own input
+        // and can be thousands of tokens for complex payloads.
         return {
           content: [
             {
@@ -136,7 +132,15 @@ export function registerWidgetKindTool(
               text: JSON.stringify({
                 ok: true,
                 descriptor: { kind: descriptor.kind, label: descriptor.label },
-                placed: { id: placeId, directive: placeDirective },
+                placed: {
+                  id: placeId,
+                  kind: 'plugin',
+                  pluginKind: descriptor.kind,
+                  role: args.instance.role,
+                  // Full directive omitted — the frontend dispatcher reads
+                  // top-level `directive` only; nested placed.directive is
+                  // not dispatched. Props echo is skipped to save tokens.
+                },
               }),
             },
           ],

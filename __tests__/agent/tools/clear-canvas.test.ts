@@ -11,12 +11,15 @@ const snap: CanvasSnapshot = {
 };
 
 describe('clear_canvas', () => {
-  it('returns clear directive and the ids that will be removed', async () => {
+  it('returns clear directive and the count of removed widgets', async () => {
     const handler = clearCanvasTool(() => snap).handler;
     const r = await handler({}, undefined);
     const out = JSON.parse(r.content[0]!.text!);
     expect(out.ok).toBe(true);
-    expect(out.removedIds).toEqual(['w-1', 'w-2']);
+    // removedIds was replaced with removedCount to avoid echoing all widget
+    // ids back to the agent (token waste — agent already has the snapshot).
+    expect(out.removedCount).toBe(2);
+    expect(out.removedIds).toBeUndefined();
     expect(out.directive).toEqual({ type: 'clear' });
   });
 });

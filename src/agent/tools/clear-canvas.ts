@@ -13,11 +13,15 @@ export function clearCanvasTool(getSnapshot: () => CanvasSnapshot): ClearCanvasT
     inputShape,
     async () => {
       const snap = getSnapshot();
-      const removedIds = snap.widgets.map((w) => w.id);
+      // `removedIds` was echoed back to the agent but it already knows what
+      // was on the canvas (it has the snapshot in context). Omit the list to
+      // avoid re-sending all widget ids as a token-wasteful echo. The count
+      // is kept for lightweight confirmation feedback.
+      const removedCount = snap.widgets.length;
       const directive = { type: 'clear' as const };
       return {
         content: [
-          { type: 'text' as const, text: JSON.stringify({ ok: true, removedIds, directive }) },
+          { type: 'text' as const, text: JSON.stringify({ ok: true, removedCount, directive }) },
         ],
       };
     },
