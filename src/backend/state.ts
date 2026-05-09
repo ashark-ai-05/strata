@@ -21,6 +21,7 @@ import {
 import { WidgetRegistry } from './widget-registry.js';
 import { registerBuiltinWidgets } from './builtin-widgets.js';
 import { AgentScheduler } from './agent-scheduler.js';
+import { NotebookStore } from './notebook-store.js';
 
 /**
  * Backend state. Constructed once at server start. Holds the
@@ -329,6 +330,21 @@ export class BackendState {
       registerBuiltinWidgets(this.widgetRegistry);
     }
     return this.widgetRegistry;
+  }
+
+  /**
+   * Notebook store — wraps the two notebook tables (notes + tasks) in the
+   * shared SQLite. Promise-cached like getStore(); reuses the same db handle
+   * so we never open a second connection to the file.
+   */
+  private notebookStorePromise: Promise<NotebookStore> | null = null;
+  async getNotebookStore(): Promise<NotebookStore> {
+    if (!this.notebookStorePromise) {
+      this.notebookStorePromise = this.getStore().then(
+        (store) => new NotebookStore(store.db),
+      );
+    }
+    return this.notebookStorePromise;
   }
 
   /**

@@ -11,6 +11,7 @@ import { teamRoute } from './routes/team.js';
 import { sourcesListRoute } from './routes/sources-list.js';
 import { canvasRoute } from './routes/canvas.js';
 import { schedulesRoute } from './routes/schedules.js';
+import { notebookRoute } from './routes/notebook.js';
 
 /**
  * The Hono app. Tests can hit `app.request(path)` directly without
@@ -226,6 +227,27 @@ app.post('/v1/query', async (c) => {
   lazyApp.all('/v1/schedules/*', async (c) => {
     const state = await getState();
     const sub = schedulesRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  app.route('/', lazyApp);
+}
+
+// /v1/notepad — singleton notes. /v1/tasks — task CRUD + calendar query.
+{
+  const lazyApp = new Hono();
+  lazyApp.all('/v1/notepad', async (c) => {
+    const state = await getState();
+    const sub = notebookRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  lazyApp.all('/v1/tasks', async (c) => {
+    const state = await getState();
+    const sub = notebookRoute(state);
+    return sub.fetch(c.req.raw);
+  });
+  lazyApp.all('/v1/tasks/*', async (c) => {
+    const state = await getState();
+    const sub = notebookRoute(state);
     return sub.fetch(c.req.raw);
   });
   app.route('/', lazyApp);
