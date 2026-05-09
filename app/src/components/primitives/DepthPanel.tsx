@@ -8,7 +8,13 @@ export interface DepthPanelProps {
   onClose: () => void;
   /** Side of viewport the panel slides in from. Default 'right'. */
   placement?: 'left' | 'right';
-  /** Panel width as a CSS length. Default '380px'. */
+  /**
+   * Panel width as a CSS length. Default '380px'.
+   *
+   * Use px values for predictable behavior. Percentage values work for
+   * `placement="right"` but not `placement="left"` — the slide-out distance
+   * `-${width}` would be interpreted relative to the panel itself, not the viewport.
+   */
   width?: string;
   /** Required for screen-reader announcements. */
   ariaLabel: string;
@@ -62,6 +68,11 @@ export function DepthPanel({
   // Focus trap (via `inert` on app root) + focus restoration on close.
   // The panel is portaled to document.body so #root can be marked inert
   // without making the panel itself inert.
+  //
+  // Single-panel only: this primitive does not support concurrent open
+  // DepthPanels (the inner would unset `inert` while the outer is still
+  // open). If you need nested modals, switch to a ref-counted approach
+  // tracking how many DepthPanels currently hold #root inert.
   useEffect(() => {
     if (!open) return;
     previousActiveRef.current = document.activeElement as HTMLElement | null;
@@ -74,7 +85,9 @@ export function DepthPanel({
       // so React has finished its commit phase before we focus.
       const target = previousActiveRef.current;
       if (target && typeof target.focus === 'function') {
-        queueMicrotask(() => target.focus());
+        queueMicrotask(() => {
+          if (target.isConnected) target.focus();
+        });
       }
     };
   }, [open]);
@@ -106,6 +119,7 @@ export function DepthPanel({
           />
           <motion.aside
             role="dialog"
+            aria-modal={true}
             aria-label={ariaLabel}
             data-placement={placement}
             className="opencanvas-panel glass-heavy"

@@ -137,8 +137,7 @@ describe('<DepthPanel>', () => {
     expect(root.hasAttribute('inert')).toBe(false);
   });
 
-  it('restores focus to the previously-active element on close', () => {
-    // Set up a button that "opens" the panel (focused before mount).
+  it('restores focus to the previously-active element on close', async () => {
     const trigger = document.createElement('button');
     trigger.textContent = 'open';
     document.body.appendChild(trigger);
@@ -151,12 +150,13 @@ describe('<DepthPanel>', () => {
       </DepthPanel>,
     );
 
-    // Close the panel — focus should return to the trigger.
     rerender(
       <DepthPanel open={false} onClose={vi.fn()} ariaLabel="Test panel">
         <div>x</div>
       </DepthPanel>,
     );
+    // Focus restoration is queued via queueMicrotask — flush before asserting.
+    await Promise.resolve();
     expect(document.activeElement).toBe(trigger);
     trigger.remove();
   });
