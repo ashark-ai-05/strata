@@ -1,5 +1,7 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useParallax } from '../../lib/motion/use-parallax';
 import { ChevronDown, Copy, ExternalLink, Pin, PinOff, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getEditor } from '../../state/editor-ref';
@@ -124,6 +126,8 @@ export function CardFrame({
     return () => clearTimeout(t);
   }, [fresh, shape.id]);
 
+  const { ref, rotateX, rotateY, translateZ, bind } = useParallax({ maxTilt: 3 });
+
   const style: CSSProperties = { width: shape.props.w, height: shape.props.h };
   const sources = Array.isArray(shape.props.sources)
     ? shape.props.sources
@@ -134,17 +138,25 @@ export function CardFrame({
     !shape.props.url;
 
   return (
-    <div
+    <motion.div
+      ref={ref as React.RefObject<HTMLDivElement>}
+      {...bind}
       className="opencanvas-card"
       data-role={role}
       data-fresh={fresh ? 'true' : 'false'}
       data-collapsed={collapsed ? 'true' : 'false'}
-      style={style}
+      style={{
+        ...style,
+        rotateX,
+        rotateY,
+        z: translateZ,
+        transformPerspective: 1200,
+      }}
     >
       {children}
       {showSingleSource && <CardSourceFooter source={shape.props.source!} />}
       {sources && sources.length > 0 && <CardSourcesFooter sources={sources} />}
-    </div>
+    </motion.div>
   );
 }
 
