@@ -157,6 +157,9 @@ export function chatRoute(state: BackendState): Hono {
       const ownedWidgetIds = new Set<string>();
 
       const provider = state.getLLMProvider();
+      const notebookStore = state.getNotebookStore
+        ? await state.getNotebookStore().catch(() => undefined)
+        : undefined;
       const events = provider.query({
         prompt,
         systemPrompt,
@@ -166,6 +169,7 @@ export function chatRoute(state: BackendState): Hono {
         abortSignal: abortController.signal,
         streamBus: bus,
         widgetRegistry: state.getWidgetRegistry(),
+        notebookStore,
       });
 
       // Wrap the provider stream so we can sniff session-started events

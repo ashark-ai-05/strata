@@ -10,8 +10,13 @@ import { linkWidgetsTool } from './link-widgets.js';
 import { clearCanvasTool } from './clear-canvas.js';
 import { switchTemplateTool } from './switch-template.js';
 import { webSearchTool, type WebSearchProvider } from './web-search.js';
+import { addTaskTool } from './add-task.js';
+import { completeTaskTool } from './complete-task.js';
+import { readNotesTool } from './read-notes.js';
+import { appendToNotesTool } from './append-to-notes.js';
 import type { CanvasSnapshot } from '../canvas-snapshot.js';
 import type { WidgetStreamBus } from '../widget-stream-bus.js';
+import type { NotebookStore } from '../../backend/notebook-store.js';
 
 export interface AgentToolDeps {
   search: {
@@ -55,16 +60,23 @@ export interface AgentToolDeps {
    * back to its built-in-only description.
    */
   plugins?: PluginKindHint[];
+  /**
+   * Async getter for the NotebookStore — notebook agent tools call this
+   * to read/write notes and tasks. Optional so existing callers that
+   * don't wire a notebook store continue to work; the 4 notebook tools
+   * are simply omitted from the tool list when not provided.
+   */
+  getNotebookStore?: () => Promise<NotebookStore>;
 }
 
 /**
- * Build the array of agent tools for one chat turn (11 tools).
+ * Build the array of agent tools for one chat turn (11 tools + up to 4 notebook tools).
  * Called per-turn so closures (search service, snapshot getter) are fresh.
  *
  * Spec: REPLICATION-PROMPT.md §11.
  */
 export function buildAgentTools(deps: AgentToolDeps) {
-  return [
+  const tools = [
     searchKbTool(deps.search),
     fetchResultTool(deps.search),
     webSearchTool(deps.webSearch),
@@ -78,4 +90,21 @@ export function buildAgentTools(deps: AgentToolDeps) {
     clearCanvasTool(deps.getSnapshot),
     switchTemplateTool(),
   ];
+
+  if (deps.getNotebookStore) {
+    const getStore = deps.getNotebookStore;
+    // Cast through unknown: the notebook tools share the same runtime
+    // contract (SdkMcpToolDefinition with a handler) but have different
+    // Zod inputShape generics, so a direct cast to SearchKbToolDef would
+    // require matching shape parameters. unknown→T is the standard
+    // escape hatch used by place-widget.ts and update-widget.ts.
+    tools.push(
+      addTaskTool(getStore) as unknown as ReturnType<typeof searchKbTool>,
+      completeTaskTool(getStore) as unknown as ReturnType<typeof searchKbTool>,
+      readNotesTool(getStore) as unknown as ReturnType<typeof searchKbTool>,
+      appendToNotesTool(getStore) as unknown as ReturnType<typeof searchKbTool>,
+    );
+  }
+
+  return tools;
 }

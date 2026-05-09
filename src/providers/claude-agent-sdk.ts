@@ -394,6 +394,9 @@ export class ClaudeAgentSdkAdapter implements LLMProvider {
         | import('../agent/widget-stream-bus.js').WidgetStreamBus
         | undefined) ?? null,
       plugins,
+      getNotebookStore: request.notebookStore
+        ? () => Promise.resolve(request.notebookStore as import('../backend/notebook-store.js').NotebookStore)
+        : undefined,
     });
 
     const mcp = createSdkMcpServer({

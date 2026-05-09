@@ -89,6 +89,14 @@ export type QueryRequest = {
   userPreferences?: {
     byKind?: Record<string, { placed: number; deleted: number; pinned: number }>;
   };
+  /**
+   * The NotebookStore for this session. Threaded through so the notebook
+   * agent tools (add_task, complete_task, read_notes, append_to_notes) can
+   * read/write notes and tasks. Typed as `unknown` to avoid a circular
+   * import on src/backend — the provider casts to NotebookStore when
+   * consuming. Omit to disable the notebook tools for this turn.
+   */
+  notebookStore?: unknown;
 };
 
 export type ProbeResult = {
