@@ -91,7 +91,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const paletteParallax = useParallax({ maxTilt: 2 });
+  const paletteParallax = useParallax({ maxTilt: 2, lift: false });
 
   // Cmd+K / Ctrl+K opens; Esc closes; '/' inside input is allowed.
   useEffect(() => {
