@@ -3,7 +3,6 @@ import { Tldraw, type Editor, type TLUiComponents } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { TextNoteShapeUtil } from './shapes/text-note';
 import { ToolsBridge } from './ToolsBridge';
-import { CollapsibleStylePanel } from '../components/CollapsibleStylePanel';
 import { CanvasGrid } from '../components/CanvasGrid';
 import { CanvasMap } from '../components/CanvasMap';
 import { MarkdownShapeUtil } from './shapes/markdown';
@@ -240,8 +239,11 @@ export function Canvas() {
 
 /**
  * Strip tldraw's built-in chrome — OpenCanvas renders its own header
- * controls. The CollapsibleStylePanel replaces tldraw's StylePanel so
- * the right edge stays clear when nothing's selected.
+ * controls. StylePanel is null too — the chevron-toggle wrapper that
+ * used to live here (CollapsibleStylePanel) was removed per user
+ * feedback ("the left arrow button / widget is useless"). Drawing
+ * tools that need style controls can be revisited if/when richer
+ * canvas drawing flows come back.
  *
  * Spec: REPLICATION-PROMPT.md §13 — `Canvas.tsx`.
  */
@@ -260,5 +262,5 @@ const tldrawUiComponents: TLUiComponents = {
   Toolbar: null,
   QuickActions: null,
   HelperButtons: null,
-  StylePanel: CollapsibleStylePanel,
+  StylePanel: null,
 };
