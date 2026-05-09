@@ -122,7 +122,7 @@ describe('register_widget_kind tool', () => {
     expect(desc.description).toMatch(/Pass \{title/);
   });
 
-  it('auto-places an instance when `instance` is provided (single-call ergonomics)', async () => {
+  it('auto-places an instance when `instance` is provided — emits TOP-LEVEL directive (single-call ergonomics)', async () => {
     const result = await handler(
       {
         kind: 'crypto-bubbles',
@@ -139,19 +139,24 @@ describe('register_widget_kind tool', () => {
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0]!.text!);
     expect(data.ok).toBe(true);
-    expect(data.descriptor.kind).toBe('crypto-bubbles');
-    // placed envelope: id + kind + pluginKind + role.
-    // Full directive with payload.props is omitted — the frontend dispatcher
-    // only reads top-level `directive`, so placed.directive was never
-    // dispatched. Omitting props avoids echoing the agent's own input
-    // (token savings for large payloads).
-    expect(data.placed).toBeDefined();
-    expect(data.placed.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(data.placed.kind).toBe('plugin');
-    expect(data.placed.pluginKind).toBe('crypto-bubbles');
-    expect(data.placed.role).toBe('primary');
-    // directive and props are no longer echoed.
-    expect(data.placed.directive).toBeUndefined();
+    // TOP-LEVEL directive — required for parseToolOutput in Chat.tsx
+    // to actually dispatch the placement to the canvas. Earlier nested
+    // shape (placed.directive) was a silent no-op.
+    expect(data.directive).toBeDefined();
+    expect(data.directive.type).toBe('place');
+    expect(data.directive.kind).toBe('plugin');
+    expect(data.directive.role).toBe('primary');
+    expect(data.directive.payload.pluginKind).toBe('crypto-bubbles');
+    expect(data.directive.payload.props).toEqual({
+      coins: ['BTC', 'ETH'],
+      title: 'Top crypto',
+    });
+    expect(data.directive.payload.title).toBe('Top crypto');
+    // Sibling fields for agent chaining context.
+    expect(data.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(data.kind).toBe('plugin');
+    expect(data.pluginKind).toBe('crypto-bubbles');
+    expect(data.role).toBe('primary');
     // Registry should contain it too.
     expect(registry.get('crypto-bubbles')).toBeDefined();
   });
@@ -168,7 +173,8 @@ describe('register_widget_kind tool', () => {
     );
     const data = JSON.parse(result.content[0]!.text!);
     expect(data.ok).toBe(true);
-    expect(data.placed).toBeUndefined();
+    expect(data.directive).toBeUndefined();
+    expect(data.id).toBeUndefined();
     expect(registry.get('lonely-template')).toBeDefined();
   });
 
