@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
-import { History, Plus, ServerCog, Trash2 } from 'lucide-react';
+import { Boxes, History, Plus, ServerCog, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Canvas } from './canvas/Canvas';
 import { FloatingChat, FloatingChatLauncher } from './components/FloatingChat';
@@ -10,6 +10,7 @@ import { HealthBadge } from './components/HealthBadge';
 import { ConversationsSidebar } from './components/ConversationsSidebar';
 import { SourcesPanel } from './components/SourcesPanel';
 import { McpSourcesPanel } from './components/McpSourcesPanel';
+import { PluginsPanel } from './components/PluginsPanel';
 import { KbBadge } from './components/KbBadge';
 import { HeaderCanvasControls } from './components/HeaderCanvasControls';
 import { HeaderDrawTools } from './components/HeaderDrawTools';
@@ -48,6 +49,7 @@ export function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+  const [pluginsOpen, setPluginsOpen] = useState(false);
 
   // Subscribe to /v1/canvas/events so any external app can drive
   // widgets on this canvas via the REST surface. The hook also
@@ -169,6 +171,15 @@ export function App() {
           <KbBadge onClick={() => setSourcesOpen(true)} />
           <button
             type="button"
+            onClick={() => setPluginsOpen(true)}
+            title="Plugins"
+            className="opencanvas-header-btn"
+            aria-label="Plugins"
+          >
+            <Boxes className="size-3.5" />
+          </button>
+          <button
+            type="button"
             onClick={() => setMcpOpen(true)}
             title="MCP servers"
             className="opencanvas-header-btn"
@@ -204,6 +215,7 @@ export function App() {
       />
       <SourcesPanel open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
       <McpSourcesPanel open={mcpOpen} onClose={() => setMcpOpen(false)} />
+      <PluginsPanel open={pluginsOpen} onClose={() => setPluginsOpen(false)} />
       <CommandPalette />
       <Toaster
         theme="dark"
