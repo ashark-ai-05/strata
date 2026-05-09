@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { spring } from '../lib/motion/springs';
+import { useParallax } from '../lib/motion/use-parallax';
 import {
   ArrowRightCircle,
   LayoutGrid,
@@ -89,6 +91,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const paletteParallax = useParallax({ maxTilt: 2 });
 
   // Cmd+K / Ctrl+K opens; Esc closes; '/' inside input is allowed.
   useEffect(() => {
@@ -324,11 +327,19 @@ export function CommandPalette() {
       />
       <motion.div
         key="cmdk-panel"
+        ref={paletteParallax.ref as React.RefObject<HTMLDivElement>}
+        onPointerMove={paletteParallax.bind.onPointerMove}
+        onPointerLeave={paletteParallax.bind.onPointerLeave}
         className="opencanvas-cmdk-panel"
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
-        transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={spring.firm}
+        style={{
+          rotateX: paletteParallax.rotateX,
+          rotateY: paletteParallax.rotateY,
+          transformPerspective: 1200,
+        }}
         role="dialog"
         aria-modal="true"
       >
