@@ -95,14 +95,18 @@ Payload schema per kind (use these field names exactly):
                       pomodoro  — { mode: 'pomodoro', startedAt: <epoch ms>, pomodoro: { workSec: 1500, breakSec: 300, longBreakSec: 900, longBreakEvery: 4 } }
                     Omit startedAt to place a paused widget the user starts manually.
 
-When you pass an unknown kind or a payload that doesn't validate, the tool auto-classifies into 'generic' with the closest-fit blocks (and a JSON fallback if nothing matches). Errors are never silent — the directive surfaces what was reformatted.${pluginsSection(plugins)}`,
+Errors return as tool errors (isError=true) so you can correct + retry. Three failure modes: (a) BUILT-IN KIND with bad payload — the validation message tells you which fields are wrong; fix the payload + retry. (b) UNKNOWN KIND — pick an existing built-in or plugin kind, or call register_widget_kind first to define a new template, then retry. (c) Plugin kinds (e.g. \`html\`, \`chart\`, \`calendar\`) accept any \`payload\` object — no schema validation; the iframe srcdoc handles whatever you pass.${pluginsSection(plugins)}`,
     inputShape,
     async (args) => {
       const id = randomUUID();
       const knownKind = (WIDGET_KINDS as readonly string[]).includes(args.kind)
         ? (args.kind as WidgetKind)
         : null;
+      const pluginKind = !knownKind && plugins?.some((p) => p.kind === args.kind)
+        ? args.kind
+        : null;
 
+      // 1. Built-in kind path — strict payload validation.
       if (knownKind) {
         try {
           const validated = validatePayloadForKind(knownKind, args.payload);
@@ -119,57 +123,74 @@ When you pass an unknown kind or a payload that doesn't validate, the tool auto-
             ],
           };
         } catch (e) {
-          // Specialized schema rejected the payload — fall through to
-          // the auto-classifier so the user still gets *something*
-          // rendered. Emit the original validation error in the result
-          // text so the agent sees what went wrong and can self-correct
-          // on the next call.
+          // Hard error so the agent retries with a corrected payload.
+          // Previously this silently reformatted to `generic`, which the
+          // agent treated as success — leaving stale placeholder widgets
+          // accumulating on the canvas while the agent moved on without
+          // recovering. The user sees junk widgets; agent thinks it
+          // worked. The right behavior is: tell the agent it failed.
           const message = e instanceof Error ? e.message : String(e);
-          const generic = classifyToGeneric(knownKind, args.payload);
-          const directive = {
-            type: 'place' as const,
-            id,
-            kind: 'generic' as const,
-            role: args.role,
-            payload: generic as unknown as Record<string, unknown>,
-          };
           return {
             content: [
               {
                 type: 'text' as const,
                 text: JSON.stringify({
-                  ok: true,
-                  id,
-                  directive,
-                  reformatted: { from: knownKind, reason: message },
+                  ok: false,
+                  error: `Invalid payload for kind '${knownKind}': ${message}. Fix the payload fields and retry, or use a different kind.`,
                 }),
               },
             ],
+            isError: true,
           };
         }
       }
 
-      // Unknown kind — straight to classifier.
-      const generic = classifyToGeneric(args.kind, args.payload);
-      const directive = {
-        type: 'place' as const,
-        id,
-        kind: 'generic' as const,
-        role: args.role,
-        payload: generic as unknown as Record<string, unknown>,
-      };
+      // 2. Plugin kind path — wrap as `kind: 'plugin'` directive that the
+      // browser's PluginShape resolves via the registered iframe-srcdoc
+      // descriptor. Plugins accept arbitrary `payload` objects (no
+      // schema validation here); the srcdoc handles what it gets via
+      // window.opencanvas.props.
+      if (pluginKind) {
+        const inner = (typeof args.payload === 'object' && args.payload !== null
+          ? args.payload
+          : {}) as Record<string, unknown>;
+        const directive = {
+          type: 'place' as const,
+          id,
+          kind: 'plugin' as const,
+          role: args.role,
+          payload: {
+            pluginKind,
+            props: inner,
+            ...(typeof inner['title'] === 'string' ? { title: inner['title'] } : {}),
+          },
+        };
+        return {
+          content: [
+            { type: 'text' as const, text: JSON.stringify({ ok: true, id, directive }) },
+          ],
+        };
+      }
+
+      // 3. Truly unknown kind — hard error suggesting register_widget_kind
+      // or one of the available built-in/plugin kinds. Same rationale as
+      // (1): silent reformat to `generic` produces junk widgets that the
+      // agent thinks succeeded.
+      const builtins = (WIDGET_KINDS as readonly string[]).join(', ');
+      const pluginNames = plugins?.length
+        ? plugins.map((p) => p.kind).sort().join(', ')
+        : '(none)';
       return {
         content: [
           {
             type: 'text' as const,
             text: JSON.stringify({
-              ok: true,
-              id,
-              directive,
-              reformatted: { from: args.kind, reason: 'unknown kind' },
+              ok: false,
+              error: `Unknown widget kind '${args.kind}'. For a NOVEL one-shot render, use kind:'html' with payload:{html:'<full HTML>'}. For a REUSABLE template, call register_widget_kind first to define '${args.kind}' then retry place_widget. Or pick an existing built-in [${builtins}] or plugin [${pluginNames}].`,
             }),
           },
         ],
+        isError: true,
       };
     },
   );

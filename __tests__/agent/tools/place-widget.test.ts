@@ -36,20 +36,17 @@ describe('place_widget', () => {
       },
       undefined,
     );
-    expect(r.isError).toBeFalsy();
+    // Was: silently reformatted to generic (left junk widget on canvas
+    // while agent thought it succeeded). Now: hard tool error so the
+    // agent retries with a corrected payload or different kind.
+    expect(r.isError).toBe(true);
     const out = JSON.parse(r.content[0]!.text!);
-    expect(out.ok).toBe(true);
-    expect(out.directive.kind).toBe('generic');
-    expect(out.reformatted).toEqual(
-      expect.objectContaining({ from: 'web-embed' }),
-    );
-    // The classifier should have salvaged the body field as a markdown block.
-    expect(out.directive.payload.blocks).toContainEqual(
-      expect.objectContaining({ type: 'markdown' }),
-    );
+    expect(out.ok).toBe(false);
+    expect(out.error).toContain('web-embed');
+    expect(out.error).toMatch(/invalid payload/i);
   });
 
-  it('auto-classifies an unknown kind to generic', async () => {
+  it('returns a hard error for an unknown kind (was silent reformat to generic)', async () => {
     const handler = placeWidgetTool().handler;
     const r = await handler(
       {
@@ -59,12 +56,33 @@ describe('place_widget', () => {
       },
       undefined,
     );
+    expect(r.isError).toBe(true);
+    const out = JSON.parse(r.content[0]!.text!);
+    expect(out.ok).toBe(false);
+    expect(out.error).toContain('candlestick-chart');
+    expect(out.error).toMatch(/register_widget_kind|kind:'html'/);
+  });
+
+  it('routes plugin kinds to a kind:plugin directive (was: silent reformat to generic)', async () => {
+    const handler = placeWidgetTool([
+      { kind: 'html', label: 'HTML', description: 'Render arbitrary HTML' },
+    ]).handler;
+    const r = await handler(
+      {
+        kind: 'html',
+        role: 'primary',
+        payload: { html: '<!doctype html><html><body>hello</body></html>' },
+      },
+      undefined,
+    );
     expect(r.isError).toBeFalsy();
     const out = JSON.parse(r.content[0]!.text!);
-    expect(out.directive.kind).toBe('generic');
-    expect(out.reformatted).toEqual(
-      expect.objectContaining({ from: 'candlestick-chart' }),
-    );
+    expect(out.ok).toBe(true);
+    expect(out.directive.kind).toBe('plugin');
+    expect(out.directive.payload.pluginKind).toBe('html');
+    expect(out.directive.payload.props).toEqual({
+      html: '<!doctype html><html><body>hello</body></html>',
+    });
   });
 
   it('mints a unique id per call', async () => {
