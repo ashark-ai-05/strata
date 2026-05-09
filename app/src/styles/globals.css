@@ -62,80 +62,9 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * Light theme overrides. Toggled via :root[data-theme='light'] —
- * theme-store flips the attribute on the html element. The variable
- * names stay the same so every downstream rule (cards, chat panel,
- * palette, etc.) gets recolored without per-component CSS changes.
- *
- * Role accents keep their dark-mode hues; they read fine on light
- * surfaces and matching them to the dark variant keeps card pinning,
- * anchors, and chat chips stable across themes.
- * ──────────────────────────────────────────────────────────────────*/
-:root[data-theme='light'] {
-  --color-bg:       #fafafa;   /* zinc-50 */
-  --color-bg-2:     #ffffff;   /* white  — surfaces / panels */
-  --color-bg-3:     #f4f4f5;   /* zinc-100 — cards (no harsh white-on-white) */
-  --color-line:     rgba(0, 0, 0, 0.08);
-  --color-line-2:   rgba(0, 0, 0, 0.13);
-  --color-fg:       #18181b;   /* zinc-900 */
-  --color-fg-2:     #3f3f46;   /* zinc-700 */
-  --color-muted:    #71717a;
-  --color-muted-2:  #a1a1aa;
-  /* Glass surface goes white-tinted on light. */
-  --color-glass-rgb: 255, 255, 255;
-}
-:root[data-theme='light'] .tl-theme__dark,
-:root[data-theme='light'] .tl-theme__light {
-  --color-background: var(--color-bg) !important;
-  --color-low: var(--color-bg-2) !important;
-}
-/* In light mode the ::selection violet becomes slightly washed; keep
-   the same hue but bump alpha so the selection is visible on white. */
-:root[data-theme='light'] ::selection {
-  background: rgba(167, 139, 250, 0.4);
-  color: #18181b;
-}
-
-/* Cards on a light canvas need a different glass recipe — white
-   surface with subtle dark inset, dark text, lighter shadow. The
-   role-tint header + aura still apply (role colors are bright
-   enough to read on white). */
-:root[data-theme='light'] .opencanvas-card {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(244, 244, 245, 0.92) 100%),
-    radial-gradient(
-      ellipse at top left,
-      var(--role-color-soft, var(--role-primary-soft)) 0%,
-      transparent 60%
-    );
-  background-blend-mode: multiply, normal;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: var(--color-fg);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 0 24px -4px var(--role-color-soft, var(--role-primary-soft)),
-    0 12px 32px -10px rgba(0, 0, 0, 0.18),
-    0 2px 6px -1px rgba(0, 0, 0, 0.10);
-}
-:root[data-theme='light'] .opencanvas-card::after {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
-}
-:root[data-theme='light'] .opencanvas-card:hover {
-  border-color: color-mix(in oklab, var(--role-color, var(--role-primary)) 55%, rgba(0, 0, 0, 0.10));
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 0 36px -2px color-mix(in oklab, var(--role-color, var(--role-primary)) 35%, transparent),
-    0 24px 64px -16px rgba(0, 0, 0, 0.22),
-    0 6px 16px -4px rgba(0, 0, 0, 0.14);
-}
-:root[data-theme='light'] .opencanvas-card-header {
-  border-bottom-color: rgba(0, 0, 0, 0.08);
-}
-
-/* ──────────────────────────────────────────────────────────────────
  * Midnight theme — deep navy + electric blue.
  *
- * Same architecture as light: every override is a CSS-variable swap
+ * Every override is a CSS-variable swap
  * so downstream rules (cards, chat panel, palette, stripe roles)
  * recolor automatically. Role hues are kept stable across themes —
  * only chrome / surfaces / brand accent shift.
@@ -728,16 +657,13 @@
 }
 
 /* Glass utility — used on chat input, toolbar, panels. Theme-aware:
-   dark themes use a near-black tint; light theme uses a white tint. */
+   each dark-family theme uses a near-black tint (midnight/sunset/mono
+   overrides below; dark uses the default --color-glass-rgb). */
 .opencanvas-glass {
   background: rgba(var(--color-glass-rgb), 0.7);
   border: 1px solid var(--color-line);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
-}
-:root[data-theme='light'] .opencanvas-glass {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0, 0, 0, 0.10);
 }
 :root[data-theme='midnight'] .opencanvas-glass {
   background: rgba(7, 10, 20, 0.78);

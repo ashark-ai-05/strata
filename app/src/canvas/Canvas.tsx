@@ -81,11 +81,10 @@ export function Canvas() {
       // Tldraw editor scope) can apply tool directives via getEditor().
       setEditor(editor);
 
-      // Mirror app theme into tldraw's color scheme. tldraw only
-      // supports light/dark — our 5 themes (dark, light, midnight,
-      // sunset, mono) collapse via tldrawColorSchemeFor: only `light`
-      // maps to light; everything else (the dark themes + their
-      // variants) maps to dark.
+      // Mirror app theme into tldraw's color scheme. All 4 shipped
+      // themes (dark, midnight, sunset, mono) are dark-family, so
+      // tldrawColorSchemeFor always returns 'dark'. The light theme
+      // was removed in the modernise-ui project (spec 2026-05-09).
       const applyScheme = (theme: import('../state/theme-store').Theme) => {
         const scheme = tldrawColorSchemeFor(theme);
         editor.user.updateUserPreferences({ colorScheme: scheme });

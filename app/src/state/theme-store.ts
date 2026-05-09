@@ -17,19 +17,19 @@ import { create } from 'zustand';
  */
 
 /**
- * The 5 shipped themes:
+ * The 4 shipped themes (all dark-family — light was removed in the
+ * modernise-ui project, spec 2026-05-09):
  *   - dark      : neutral charcoal + violet/magenta accent (default)
- *   - light     : near-white surfaces + same accent (printed-doc feel)
  *   - midnight  : deep indigo/navy + cool electric-blue accent
  *   - sunset    : warm wine/brown + orange/amber accent
- *   - mono      : pure grayscale, no chromatic accent (Linear/Vercel feel)
+ *   - mono      : pure grayscale, no chromatic accent
  *
- * Each theme keeps the SAME role hues (primary=violet, detail=blue,
+ * Each theme keeps the same role hues (primary=violet, detail=blue,
  * etc.) so widgets stay glanceable across themes — only chrome /
  * surface / brand gradient shifts. The exception is `mono`, which
  * desaturates roles to fit the monochrome aesthetic.
  */
-export const THEMES = ['dark', 'light', 'midnight', 'sunset', 'mono'] as const;
+export const THEMES = ['dark', 'midnight', 'sunset', 'mono'] as const;
 export type Theme = (typeof THEMES)[number];
 
 /**
@@ -46,11 +46,6 @@ export const THEME_META: Record<
     label: 'Dark',
     description: 'Neutral charcoal · violet accent',
     swatches: ['#0a0a0c', '#1c1c22', '#a78bfa'],
-  },
-  light: {
-    label: 'Light',
-    description: 'Paper white · violet accent',
-    swatches: ['#fafafa', '#ffffff', '#a78bfa'],
   },
   midnight: {
     label: 'Midnight',
@@ -99,13 +94,16 @@ function applyToDocument(theme: Theme): void {
 }
 
 /**
- * Map a custom theme to a tldraw color-scheme bucket — tldraw only
- * has 'light' / 'dark', so anything that's perceptually dark
- * (midnight, sunset, mono) maps to dark; only the explicit `light`
- * theme maps to light. Used by Canvas.tsx via store.subscribe.
+ * Map a custom theme to a tldraw color-scheme bucket. All four shipped
+ * themes are dark-family. The 'light' theme was removed in the
+ * modernise-ui project (spec 2026-05-09); tldraw's canvas always
+ * renders against a dark surface.
  */
-export function tldrawColorSchemeFor(theme: Theme): 'dark' | 'light' {
-  return theme === 'light' ? 'light' : 'dark';
+export function tldrawColorSchemeFor(_theme: Theme): 'dark' {
+  // All four shipped themes are dark-family. The 'light' theme was
+  // removed in the modernise-ui project (spec 2026-05-09); tldraw's
+  // canvas always renders against a dark surface.
+  return 'dark';
 }
 
 type ThemeStore = {
