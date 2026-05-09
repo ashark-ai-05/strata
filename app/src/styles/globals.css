@@ -10,8 +10,8 @@
   --color-bg:       #0a0a0c;     /* neutral near-black */
   --color-bg-2:     #131318;     /* surfaces / panels */
   --color-bg-3:     #1c1c22;     /* cards (true neutral, was violet-tinted) */
-  --color-line:     rgba(255, 255, 255, 0.18);
-  --color-line-2:   rgba(255, 255, 255, 0.26);
+  --color-line:     rgba(255, 255, 255, 0.24);
+  --color-line-2:   rgba(255, 255, 255, 0.34);
   /* Glass-surface RGB triplet — used inside rgba() for panels / popovers
      / chat shell so they tint to the theme. Per-theme overrides swap
      this to the appropriate background color (e.g. white in light
@@ -183,15 +183,15 @@
     font-family: var(--font-sans);
     font-feature-settings: 'cv11', 'ss01', 'ss03';
     color: var(--color-fg);
-    /* Ambient backdrop: deep base + two faint role-tinted vignettes (top-left
-       violet, bottom-right teal) so glass surfaces have *somewhere to float in*
-       rather than sitting on pure black void. Each vignette is ~3% alpha — close
-       to subliminal, which is the point. Tldraw's canvas covers most of this
-       once content is placed; the ambient remains visible through the chrome
-       gaps + behind translucent panels. */
+    /* Ambient backdrop: brand-aligned 3-stop wash echoing the violet→fuchsia
+       →pink gradient (--grad-brand). Visible (not subliminal) so the canvas
+       has actual atmosphere rather than reading as a void. Tldraw's canvas
+       covers most of this once content is placed; the ambient remains
+       visible through chrome gaps + behind translucent panels. */
     background:
-      radial-gradient(ellipse 70% 60% at 25% 20%, rgba(167, 139, 250, 0.16), transparent 70%),
-      radial-gradient(ellipse 65% 55% at 80% 90%, rgba(45, 212, 191, 0.11), transparent 70%),
+      radial-gradient(ellipse 70% 60% at 18% 22%, rgba(167, 139, 250, 0.22), transparent 65%),
+      radial-gradient(ellipse 55% 50% at 60% 75%, rgba(217, 70, 239, 0.16), transparent 65%),
+      radial-gradient(ellipse 65% 55% at 92% 95%, rgba(236, 72, 153, 0.18), transparent 65%),
       var(--color-bg);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
@@ -247,7 +247,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
   /* Glassmorphism — neutral charcoal surface (was violet-tinted at
      38,38,50 → made everything feel "default-violet"). The role
      color now comes ENTIRELY from the radial tint at top-left, not
