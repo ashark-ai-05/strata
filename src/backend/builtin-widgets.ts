@@ -27,7 +27,233 @@ export function registerBuiltinWidgets(registry: WidgetRegistry): void {
       srcdoc: CHART_SRCDOC,
     },
   });
+
+  registry.register({
+    kind: 'calendar',
+    label: 'Calendar',
+    description:
+      "Render a calendar — year view (12 mini-months, 4×3 grid) or month view (single full-width month with day-of-week header). Pass {view, year, month, events?, title?}.\n" +
+      "- view: 'year' or 'month' (default 'month')\n" +
+      '- year: full 4-digit year (default current)\n' +
+      "- month: 1–12 (only used when view='month'; default current)\n" +
+      "- events: array of {date: 'YYYY-MM-DD', label?: string} — rendered as dots on year view or chips on month view\n" +
+      '- title: optional caption above the grid\n\n' +
+      'Use this when the user asks to see a calendar, plan dates, or visualize event timing across days/months. Today’s date is auto-highlighted.',
+    renderer: {
+      type: 'iframe',
+      sandbox: 'allow-scripts',
+      defaultSize: { w: 540, h: 420 },
+      srcdoc: CALENDAR_SRCDOC,
+    },
+  });
 }
+
+/**
+ * Calendar renderer template.
+ *
+ * Pure vanilla JS — no external libraries. Reads props from
+ * window.opencanvas.props on first paint; subsequent updates arrive via
+ * the 'opencanvas:props' DOM event. Supports two views:
+ *   - 'year'  — 4×3 grid of mini-months with event dots + today ring
+ *   - 'month' — single full-width month with day-of-week header + event chips
+ *
+ * Props shape: { view?, year?, month?, events?, title? }
+ * Defaults to current month when props are absent or partial.
+ */
+const CALENDAR_SRCDOC = `<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:transparent;color:#fafafa;font-family:'Inter',system-ui,sans-serif}
+#root{padding:14px;height:100%;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.title{font-size:13px;font-weight:600;letter-spacing:-0.012em;color:#fafafa;text-align:center;margin-bottom:2px;flex-shrink:0}
+
+/* ── year view ── */
+.year-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;min-height:0;overflow:auto}
+.mini-month{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.mini-month-name{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#d4d4d8;text-align:center}
+.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:9px}
+.mini-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#a1a1aa;border-radius:2px;position:relative;line-height:1}
+.mini-cell.today{background:rgba(167,139,250,0.18);color:#fafafa;font-weight:700;outline:1.5px solid rgba(167,139,250,0.7);outline-offset:-1px}
+.mini-cell.has-event::after{content:"";position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:99px;background:#a78bfa}
+.mini-cell.past{opacity:0.55}
+.mini-cell.empty{visibility:hidden}
+
+/* ── month view ── */
+.month-view{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0}
+.month-header{font-size:14px;font-weight:600;text-align:center;color:#fafafa;flex-shrink:0}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:0.04em;text-align:center;flex-shrink:0}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:4px;flex:1;min-height:0}
+.month-cell{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:5px;display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden}
+.month-cell.today{outline:1.5px solid rgba(167,139,250,0.7);outline-offset:-1px;background:rgba(167,139,250,0.08)}
+.month-cell.past{opacity:0.55}
+.month-cell.empty{visibility:hidden;border:none;background:none}
+.month-cell-num{font-size:11px;font-weight:600;color:#fafafa;line-height:1.2}
+.month-cell-events{display:flex;flex-direction:column;gap:1px;min-height:0;overflow:hidden}
+.month-cell-event{font-size:9px;color:#ddd6fe;background:rgba(167,139,250,0.16);padding:1px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+
+/* ── empty state ── */
+.empty{color:#a1a1aa;font-size:12px;padding:24px;text-align:center;line-height:1.5}
+.empty .ck{background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px;color:#ddd6fe;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px}
+</style></head>
+<body><div id="root"></div>
+<script>
+(function(){
+  var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOW=['S','M','T','W','T','F','S'];
+
+  function todayStr(){
+    var d=new Date();
+    var y=d.getFullYear();
+    var m=String(d.getMonth()+1).padStart(2,'0');
+    var dd=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  }
+
+  function dateStr(year,month1,day){
+    return year+'-'+String(month1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  }
+
+  function daysInMonth(year,month1){
+    return new Date(year,month1,0).getDate();
+  }
+
+  function startDow(year,month1){
+    // 0=Sun..6=Sat
+    return new Date(year,month1-1,1).getDay();
+  }
+
+  function buildEventSet(events){
+    var s=Object.create(null);
+    if(!Array.isArray(events))return s;
+    for(var i=0;i<events.length;i++){
+      var e=events[i];
+      if(e&&e.date){
+        if(!s[e.date])s[e.date]=[];
+        s[e.date].push(e.label||'');
+      }
+    }
+    return s;
+  }
+
+  function el(tag,cls){
+    var n=document.createElement(tag);
+    if(cls)n.className=cls;
+    return n;
+  }
+
+  function renderMiniMonth(year,month1,evSet,today){
+    var wrap=el('div','mini-month');
+    var nameEl=el('div','mini-month-name');
+    nameEl.textContent=MONTH_NAMES[month1-1];
+    wrap.appendChild(nameEl);
+    var grid=el('div','mini-grid');
+    var dim=daysInMonth(year,month1);
+    var sd=startDow(year,month1);
+    // blank leading cells
+    for(var i=0;i<sd;i++){
+      grid.appendChild(el('div','mini-cell empty'));
+    }
+    for(var d=1;d<=dim;d++){
+      var ds=dateStr(year,month1,d);
+      var cell=el('div','mini-cell');
+      if(ds<today)cell.className+=' past';
+      if(ds===today)cell.className+=' today';
+      if(evSet[ds])cell.className+=' has-event';
+      cell.textContent=String(d);
+      if(evSet[ds]&&evSet[ds].length){
+        var labels=evSet[ds].filter(function(l){return l;});
+        if(labels.length){cell.title=labels.join(', ');}
+      }
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderYear(root,year,evSet,today,title){
+    if(title){var t=el('div','title');t.textContent=title;root.appendChild(t);}
+    var grid=el('div','year-grid');
+    for(var m=1;m<=12;m++){
+      grid.appendChild(renderMiniMonth(year,m,evSet,today));
+    }
+    root.appendChild(grid);
+  }
+
+  function renderMonth(root,year,month1,evSet,today,title){
+    if(title){var t=el('div','title');t.textContent=title;root.appendChild(t);}
+    var mv=el('div','month-view');
+    var hdr=el('div','month-header');
+    hdr.textContent=MONTH_NAMES[month1-1]+' '+year;
+    mv.appendChild(hdr);
+    var dow=el('div','dow-row');
+    for(var i=0;i<7;i++){var dc=el('div');dc.textContent=DOW[i];dow.appendChild(dc);}
+    mv.appendChild(dow);
+    var mgrid=el('div','month-grid');
+    var dim=daysInMonth(year,month1);
+    var sd=startDow(year,month1);
+    // 6 rows * 7 cols = 42 cells total
+    for(var ci=0;ci<42;ci++){
+      var dayNum=ci-sd+1;
+      if(dayNum<1||dayNum>dim){
+        mgrid.appendChild(el('div','month-cell empty'));
+      } else {
+        var ds=dateStr(year,month1,dayNum);
+        var cell=el('div','month-cell');
+        if(ds<today)cell.className+=' past';
+        if(ds===today)cell.className+=' today';
+        var num=el('div','month-cell-num');
+        num.textContent=String(dayNum);
+        cell.appendChild(num);
+        if(evSet[ds]&&evSet[ds].length){
+          var evWrap=el('div','month-cell-events');
+          var labels=evSet[ds];
+          var shown=Math.min(labels.length,3);
+          for(var li=0;li<shown;li++){
+            var chip=el('div','month-cell-event');
+            chip.textContent=labels[li]||'•';
+            evWrap.appendChild(chip);
+          }
+          if(labels.length>shown){
+            var more=el('div','month-cell-event');
+            more.textContent='+'+(labels.length-shown)+' more';
+            evWrap.appendChild(more);
+          }
+          cell.appendChild(evWrap);
+        }
+        mgrid.appendChild(cell);
+      }
+    }
+    mv.appendChild(mgrid);
+    root.appendChild(mv);
+  }
+
+  function render(props){
+    var root=document.getElementById('root');
+    while(root.firstChild)root.removeChild(root.firstChild);
+    var p=props||{};
+    var now=new Date();
+    var view=p.view||'month';
+    var year=p.year||now.getFullYear();
+    var month1=p.month||now.getMonth()+1;
+    var title=p.title||null;
+    var evSet=buildEventSet(p.events);
+    var today=todayStr();
+    if(view==='year'){
+      renderYear(root,year,evSet,today,title);
+    } else {
+      renderMonth(root,year,month1,evSet,today,title);
+    }
+  }
+
+  var initProps=window.opencanvas&&window.opencanvas.props;
+  render(initProps||null);
+  window.addEventListener('opencanvas:props',function(e){
+    render(e.detail&&e.detail.props||e.detail||null);
+  });
+})();
+</script>
+</body></html>`;
 
 /**
  * Vega-Lite chart renderer template.
