@@ -5,6 +5,7 @@ import { useParallax } from '../../lib/motion/use-parallax';
 import { ChevronDown, Copy, ExternalLink, Pin, PinOff, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getEditor } from '../../state/editor-ref';
+import { SendWidgetMenu } from '../../components/SendWidgetMenu';
 
 /**
  * Header height when a card is collapsed. Should match the rendered
@@ -375,6 +376,7 @@ export function CardActions({
   return (
     <span className="opencanvas-card-actions">
       {extras}
+      <SendWidgetMenu shapeId={shape.id} />
       <CardActionButton
         onClick={togglePin}
         title={pinned ? 'Unpin (will be removed by Clear)' : 'Pin (survives Clear)'}
