@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.0",
-    "@anthropic-ai/claude-agent-sdk": "*",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.138",
     "@anthropic-ai/sdk": "*",
     "@hono/node-server": "^1.10.0",
     "@huggingface/transformers": "^4.0.0",
@@ -96,7 +96,8 @@
     "overrides": {
       "tar": "^7.5.11",
       "@tootallnate/once": "^3.0.1",
-      "@anthropic-ai/sdk": "^0.92.0"
+      "@anthropic-ai/sdk": "^0.95.1",
+      "ip-address": "^10.1.1"
     }
   },
   "build": {
